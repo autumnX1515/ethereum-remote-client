@@ -5,16 +5,16 @@ let mapStateToProps
 
 proxyquire('../transaction-activity-log.container.js', {
   'react-redux': {
-    connect: (ms) => {
+    connect: ms => {
       mapStateToProps = ms
       return () => ({})
     },
   },
 })
 
-describe('TransactionActivityLog container', function () {
-  describe('mapStateToProps()', function () {
-    it('should return the correct props', function () {
+describe('TransactionActivityLog container', () => {
+  describe('mapStateToProps()', () => {
+    it('should return the correct props', () => {
       const mockState = {
         metamask: {
           conversionRate: 280.45,

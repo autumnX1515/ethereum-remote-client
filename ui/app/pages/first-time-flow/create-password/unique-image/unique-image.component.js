@@ -34,7 +34,7 @@ export default class UniqueImageScreen extends PureComponent {
           { t('protectYourKeysMessage2') }
         </div>
         <Button
-          type="primary"
+          type="confirm"
           className="first-time-flow__button"
           onClick={() => {
             this.context.metricsEvent({

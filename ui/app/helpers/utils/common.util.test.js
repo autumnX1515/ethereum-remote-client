@@ -1,9 +1,9 @@
 import * as utils from './common.util'
 import assert from 'assert'
 
-describe('Common utils', function () {
-  describe('camelCaseToCapitalize', function () {
-    it('should return a capitalized string from a camel-cased string', function () {
+describe('Common utils', () => {
+  describe('camelCaseToCapitalize', () => {
+    it('should return a capitalized string from a camel-cased string', () => {
       const tests = [
         {
           test: undefined,

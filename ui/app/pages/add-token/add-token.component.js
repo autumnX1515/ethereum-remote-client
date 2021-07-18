@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import ethUtil from 'ethereumjs-util'
-import { checkExistingAddresses } from '../../helpers/utils/util'
+import { checkExistingAddresses } from './util'
 import { tokenInfoGetter } from '../../helpers/utils/token-util'
-import { CONFIRM_ADD_TOKEN_ROUTE } from '../../helpers/constants/routes'
+import { DEFAULT_ROUTE, CONFIRM_ADD_TOKEN_ROUTE } from '../../helpers/constants/routes'
 import TextField from '../../components/ui/text-field'
 import TokenList from './token-list'
 import TokenSearch from './token-search'
@@ -11,6 +11,8 @@ import PageContainer from '../../components/ui/page-container'
 import { Tabs, Tab } from '../../components/ui/tabs'
 
 const emptyAddr = '0x0000000000000000000000000000000000000000'
+const SEARCH_TAB = 'SEARCH'
+const CUSTOM_TOKEN_TAB = 'CUSTOM_TOKEN'
 
 class AddToken extends Component {
   static contextTypes = {
@@ -24,21 +26,25 @@ class AddToken extends Component {
     clearPendingTokens: PropTypes.func,
     tokens: PropTypes.array,
     identities: PropTypes.object,
-    mostRecentOverviewPage: PropTypes.string.isRequired,
   }
 
-  state = {
-    customAddress: '',
-    customSymbol: '',
-    customDecimals: 0,
-    searchResults: [],
-    selectedTokens: {},
-    tokenSelectorError: null,
-    customAddressError: null,
-    customSymbolError: null,
-    customDecimalsError: null,
-    autoFilled: false,
-    forceEditSymbol: false,
+  constructor (props) {
+    super(props)
+
+    this.state = {
+      customAddress: '',
+      customSymbol: '',
+      customDecimals: 0,
+      searchResults: [],
+      selectedTokens: {},
+      tokenSelectorError: null,
+      customAddressError: null,
+      customSymbolError: null,
+      customDecimalsError: null,
+      autoFilled: false,
+      displayedTab: SEARCH_TAB,
+      forceEditSymbol: false,
+    }
   }
 
   componentDidMount () {
@@ -50,7 +56,7 @@ class AddToken extends Component {
       let selectedTokens = {}
       let customToken = {}
 
-      pendingTokenKeys.forEach((tokenAddress) => {
+      pendingTokenKeys.forEach(tokenAddress => {
         const token = pendingTokens[tokenAddress]
         const { isCustom } = token
 
@@ -67,7 +73,8 @@ class AddToken extends Component {
         decimals: customDecimals = 0,
       } = customToken
 
-      this.setState({ selectedTokens, customAddress, customSymbol, customDecimals })
+      const displayedTab = Object.keys(selectedTokens).length > 0 ? SEARCH_TAB : CUSTOM_TOKEN_TAB
+      this.setState({ selectedTokens, customAddress, customSymbol, customDecimals, displayedTab })
     }
   }
 
@@ -229,7 +236,7 @@ class AddToken extends Component {
           label={this.context.t('tokenContractAddress')}
           type="text"
           value={customAddress}
-          onChange={(e) => this.handleCustomAddressChange(e.target.value)}
+          onChange={e => this.handleCustomAddressChange(e.target.value)}
           error={customAddressError}
           fullWidth
           margin="normal"
@@ -253,7 +260,7 @@ class AddToken extends Component {
           )}
           type="text"
           value={customSymbol}
-          onChange={(e) => this.handleCustomSymbolChange(e.target.value)}
+          onChange={e => this.handleCustomSymbolChange(e.target.value)}
           error={customSymbolError}
           fullWidth
           margin="normal"
@@ -264,7 +271,7 @@ class AddToken extends Component {
           label={this.context.t('decimal')}
           type="number"
           value={customDecimals}
-          onChange={(e) => this.handleCustomDecimalsChange(e.target.value)}
+          onChange={e => this.handleCustomDecimalsChange(e.target.value)}
           error={customDecimalsError}
           fullWidth
           margin="normal"
@@ -287,7 +294,7 @@ class AddToken extends Component {
           <TokenList
             results={searchResults}
             selectedTokens={selectedTokens}
-            onToggleToken={(token) => this.handleToggleToken(token)}
+            onToggleToken={token => this.handleToggleToken(token)}
           />
         </div>
       </div>
@@ -308,17 +315,17 @@ class AddToken extends Component {
   }
 
   render () {
-    const { history, clearPendingTokens, mostRecentOverviewPage } = this.props
+    const { history, clearPendingTokens } = this.props
 
     return (
       <PageContainer
         title={this.context.t('addTokens')}
         tabsComponent={this.renderTabs()}
         onSubmit={() => this.handleNext()}
-        disabled={Boolean(this.hasError()) || !this.hasSelected()}
+        disabled={this.hasError() || !this.hasSelected()}
         onCancel={() => {
           clearPendingTokens()
-          history.push(mostRecentOverviewPage)
+          history.push(DEFAULT_ROUTE)
         }}
       />
     )

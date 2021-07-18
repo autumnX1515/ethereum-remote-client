@@ -48,8 +48,7 @@ export default class ConfirmRemoveAccount extends Component {
           <a
             className=""
             href={genAccountLink(identity.address, this.props.network)}
-            target="_blank"
-            rel="noopener noreferrer"
+            target={'_blank'}
             title={this.context.t('etherscanView')}
           >
             <img src="images/popout.svg" />
@@ -79,9 +78,7 @@ export default class ConfirmRemoveAccount extends Component {
             <a
               className="confirm-remove-account__link"
               rel="noopener noreferrer"
-              target="_blank"
-              href="https://support.brave.com/hc/en-us/articles/360035488071-How-do-I-manage-my-Crypto-Wallets-"
-            >
+              target="_blank" href="https://metamask.zendesk.com/hc/en-us/articles/360015289932">
               { t('learnMore') }
             </a>
           </div>

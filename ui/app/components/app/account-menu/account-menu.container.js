@@ -1,5 +1,5 @@
 import { connect } from 'react-redux'
-import { compose } from 'redux'
+import { compose } from 'recompose'
 import { withRouter } from 'react-router-dom'
 import {
   toggleAccountMenu,
@@ -7,42 +7,29 @@ import {
   hideSidebar,
   lockMetamask,
   hideWarning,
+  showConfigPage,
+  showInfoPage,
+  showModal,
 } from '../../../store/actions'
-import {
-  getAddressConnectedDomainMap,
-  getMetaMaskAccountsOrdered,
-  getMetaMaskKeyrings,
-  getOriginOfCurrentTab,
-  getSelectedAddress,
-} from '../../../selectors'
+import { getMetaMaskAccounts } from '../../../selectors/selectors'
 import AccountMenu from './account-menu.component'
 
-/**
- * The min amount of accounts to show search field
- */
-const SHOW_SEARCH_ACCOUNTS_MIN_COUNT = 5
-
 function mapStateToProps (state) {
-  const { metamask: { isAccountMenuOpen } } = state
-  const accounts = getMetaMaskAccountsOrdered(state)
-  const origin = getOriginOfCurrentTab(state)
-  const selectedAddress = getSelectedAddress(state)
+  const { metamask: { selectedAddress, isAccountMenuOpen, keyrings, identities } } = state
 
   return {
+    selectedAddress,
     isAccountMenuOpen,
-    addressConnectedDomainMap: getAddressConnectedDomainMap(state),
-    originOfCurrentTab: origin,
-    selectedAddress: selectedAddress,
-    keyrings: getMetaMaskKeyrings(state),
-    accounts,
-    shouldShowAccountsSearch: accounts.length >= SHOW_SEARCH_ACCOUNTS_MIN_COUNT,
+    keyrings,
+    identities,
+    accounts: getMetaMaskAccounts(state),
   }
 }
 
 function mapDispatchToProps (dispatch) {
   return {
     toggleAccountMenu: () => dispatch(toggleAccountMenu()),
-    showAccountDetail: (address) => {
+    showAccountDetail: address => {
       dispatch(showAccountDetail(address))
       dispatch(hideSidebar())
       dispatch(toggleAccountMenu())
@@ -53,10 +40,23 @@ function mapDispatchToProps (dispatch) {
       dispatch(hideSidebar())
       dispatch(toggleAccountMenu())
     },
+    showConfigPage: () => {
+      dispatch(showConfigPage())
+      dispatch(hideSidebar())
+      dispatch(toggleAccountMenu())
+    },
+    showInfoPage: () => {
+      dispatch(showInfoPage())
+      dispatch(hideSidebar())
+      dispatch(toggleAccountMenu())
+    },
+    showRemoveAccountConfirmationModal: identity => {
+      return dispatch(showModal({ name: 'CONFIRM_REMOVE_ACCOUNT', identity }))
+    },
   }
 }
 
 export default compose(
   withRouter,
-  connect(mapStateToProps, mapDispatchToProps),
+  connect(mapStateToProps, mapDispatchToProps)
 )(AccountMenu)

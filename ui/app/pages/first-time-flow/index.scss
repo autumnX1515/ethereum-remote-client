@@ -1,7 +1,11 @@
 @import 'welcome/index';
+
 @import 'select-action/index';
+
 @import 'seed-phrase/index';
+
 @import 'end-of-flow/index';
+
 @import 'metametrics-opt-in/index';
 
 
@@ -22,10 +26,6 @@
 
     .app-header__metafox-logo {
       margin-bottom: 40px;
-
-      @media screen and (max-width: $break-small) {
-        margin-bottom: 0;
-      }
     }
   }
 
@@ -64,24 +64,19 @@
 
   &__textarea-label {
     margin-bottom: 9px;
-    color: #1b344d;
+    color: #1B344D;
     font-size: 18px;
   }
 
   &__textarea {
-    /*rtl:ignore*/
-    direction: ltr;
     font-size: 1rem;
     font-family: Roboto;
-    border: 1px solid #cdcdcd;
+    height: 190px;
+    border: 1px solid #CDCDCD;
     border-radius: 6px;
-    background-color: #fff;
+    background-color: #FFFFFF;
     padding: 16px;
     margin-top: 8px;
-  }
-
-  &__seedphrase {
-    margin-top: 9px !important;
   }
 
   &__breadcrumbs {
@@ -99,7 +94,7 @@
     height: 200px;
     overflow-y: auto;
     color: #757575;
-    font-size: 0.75rem;
+    font-size: .75rem;
     line-height: 15px;
     text-align: justify;
     margin: 0;
@@ -113,13 +108,13 @@
 
     @media screen and (max-width: $break-small) {
       margin-bottom: 16px;
-      font-size: 0.875rem;
+      font-size: .875rem;
     }
   }
 
   &__button {
     margin: 35px 0 14px;
-    width: 170px;
+    width: 140px;
     height: 44px;
   }
 
@@ -130,8 +125,8 @@
   }
 
   &__checkbox {
-    background: #fff;
-    border: 1px solid #cdcdcd;
+    background: #FFFFFF;
+    border: 1px solid #CDCDCD;
     box-sizing: border-box;
     height: 34px;
     width: 34px;
@@ -144,7 +139,7 @@
     }
 
     .fa-check {
-      color: #2f9ae0;
+      color: #2f9ae0
     }
   }
 
@@ -159,6 +154,6 @@
   }
 
   &__link-text {
-    color: $primary-blue;
+    color: $curious-blue;
   }
 }

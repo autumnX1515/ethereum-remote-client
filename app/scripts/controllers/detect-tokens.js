@@ -1,17 +1,17 @@
-import Web3 from 'web3'
-import contracts from 'eth-contract-metadata'
-import { warn } from 'loglevel'
-import { MAINNET } from './network/enums'
+const Web3 = require('web3')
+const contracts = require('eth-contract-metadata')
+const { warn } = require('loglevel')
+const { MAINNET } = require('./network/enums')
 // By default, poll every 3 minutes
 const DEFAULT_INTERVAL = 180 * 1000
-import SINGLE_CALL_BALANCES_ABI from 'single-call-balance-checker-abi'
-
+const ERC20_ABI = [{'constant': true, 'inputs': [{'name': '_owner', 'type': 'address'}], 'name': 'balanceOf', 'outputs': [{'name': 'balance', 'type': 'uint256'}], 'payable': false, 'type': 'function'}]
+const SINGLE_CALL_BALANCES_ABI = require('single-call-balance-checker-abi')
 const SINGLE_CALL_BALANCES_ADDRESS = '0xb1f8e55c7f64d203c1400b9d8555d050f94adf39'
 /**
  * A controller that polls for token exchange
  * rates based on a user's current token list
  */
-export default class DetectTokensController {
+class DetectTokensController {
   /**
    * Creates a DetectTokensController
    *
@@ -25,16 +25,12 @@ export default class DetectTokensController {
   }
 
   /**
-   * For each token in eth-contract-metadata, find check selectedAddress balance.
+   * For each token in eth-contract-metada, find check selectedAddress balance.
+   *
    */
   async detectNewTokens () {
-    if (!this.isActive) {
-      return
-    }
-    if (this._network.store.getState().provider.type !== MAINNET) {
-      return
-    }
-
+    if (!this.isActive) { return }
+    if (this._network.store.getState().provider.type !== MAINNET) { return }
     const tokensToDetect = []
     this.web3.setProvider(this._network._provider)
     for (const contractAddress in contracts) {
@@ -43,31 +39,38 @@ export default class DetectTokensController {
       }
     }
 
-    let result
-    try {
-      result = await this._getTokenBalances(tokensToDetect)
-    } catch (error) {
-      warn(`MetaMask - DetectTokensController single call balance fetch failed`, error)
-      return
-    }
-
-    tokensToDetect.forEach((tokenAddress, index) => {
-      const balance = result[index]
-      if (balance && !balance.isZero()) {
-        this._preferences.addToken(tokenAddress, contracts[tokenAddress].symbol, contracts[tokenAddress].decimals)
+    const ethContract = this.web3.eth.contract(SINGLE_CALL_BALANCES_ABI).at(SINGLE_CALL_BALANCES_ADDRESS)
+    ethContract.balances([this.selectedAddress], tokensToDetect, (error, result) => {
+      if (error) {
+        warn(`MetaMask - DetectTokensController single call balance fetch failed`, error)
+        return
       }
+      tokensToDetect.forEach((tokenAddress, index) => {
+        const balance = result[index]
+        if (!balance.isZero()) {
+          this._preferences.addToken(tokenAddress, contracts[tokenAddress].symbol, contracts[tokenAddress].decimals)
+        }
+      })
     })
   }
 
-  async _getTokenBalances (tokens) {
-    const ethContract = this.web3.eth.contract(SINGLE_CALL_BALANCES_ABI).at(SINGLE_CALL_BALANCES_ADDRESS)
-    return new Promise((resolve, reject) => {
-      ethContract.balances([this.selectedAddress], tokens, (error, result) => {
-        if (error) {
-          return reject(error)
+   /**
+   * Find if selectedAddress has tokens with contract in contractAddress.
+   *
+   * @param {string} contractAddress Hex address of the token contract to explore.
+   * @returns {boolean} If balance is detected, token is added.
+   *
+   */
+  async detectTokenBalance (contractAddress) {
+    const ethContract = this.web3.eth.contract(ERC20_ABI).at(contractAddress)
+    ethContract.balanceOf(this.selectedAddress, (error, result) => {
+      if (!error) {
+        if (!result.isZero()) {
+          this._preferences.addToken(contractAddress, contracts[contractAddress].symbol, contracts[contractAddress].decimals)
         }
-        return resolve(result)
-      })
+      } else {
+        warn(`MetaMask - DetectTokensController balance fetch failed for ${contractAddress}.`, error)
+      }
     })
   }
 
@@ -77,9 +80,7 @@ export default class DetectTokensController {
    *
    */
   restartTokenDetection () {
-    if (!(this.isActive && this.selectedAddress)) {
-      return
-    }
+    if (!(this.isActive && this.selectedAddress)) { return }
     this.detectNewTokens()
     this.interval = DEFAULT_INTERVAL
   }
@@ -89,12 +90,8 @@ export default class DetectTokensController {
    */
   set interval (interval) {
     this._handle && clearInterval(this._handle)
-    if (!interval) {
-      return
-    }
-    this._handle = setInterval(() => {
-      this.detectNewTokens()
-    }, interval)
+    if (!interval) { return }
+    this._handle = setInterval(() => { this.detectNewTokens() }, interval)
   }
 
   /**
@@ -102,19 +99,9 @@ export default class DetectTokensController {
    * @type {Object}
    */
   set preferences (preferences) {
-    if (!preferences) {
-      return
-    }
+    if (!preferences) { return }
     this._preferences = preferences
-    const currentTokens = preferences.store.getState().tokens
-    this.tokenAddresses = currentTokens
-      ? currentTokens.map((token) => token.address)
-      : []
-    preferences.store.subscribe(({ tokens = [] }) => {
-      this.tokenAddresses = tokens.map((token) => {
-        return token.address
-      })
-    })
+    preferences.store.subscribe(({ tokens = [] }) => { this.tokenAddresses = tokens.map((obj) => { return obj.address }) })
     preferences.store.subscribe(({ selectedAddress }) => {
       if (this.selectedAddress !== selectedAddress) {
         this.selectedAddress = selectedAddress
@@ -127,9 +114,7 @@ export default class DetectTokensController {
    * @type {Object}
    */
   set network (network) {
-    if (!network) {
-      return
-    }
+    if (!network) { return }
     this._network = network
     this.web3 = new Web3(network._provider)
   }
@@ -139,16 +124,12 @@ export default class DetectTokensController {
    * @type {Object}
    */
   set keyringMemStore (keyringMemStore) {
-    if (!keyringMemStore) {
-      return
-    }
+    if (!keyringMemStore) { return }
     this._keyringMemStore = keyringMemStore
     this._keyringMemStore.subscribe(({ isUnlocked }) => {
       if (this.isUnlocked !== isUnlocked) {
         this.isUnlocked = isUnlocked
-        if (isUnlocked) {
-          this.restartTokenDetection()
-        }
+        if (isUnlocked) { this.restartTokenDetection() }
       }
     })
   }
@@ -161,3 +142,5 @@ export default class DetectTokensController {
     return this.isOpen && this.isUnlocked
   }
 }
+
+module.exports = DetectTokensController

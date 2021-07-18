@@ -1,64 +1,33 @@
 import { connect } from 'react-redux'
-import { compose } from 'redux'
+import { compose } from 'recompose'
 import { withRouter } from 'react-router-dom'
 import {
   setTransactionToConfirm,
   clearConfirmTransaction,
 } from '../../ducks/confirm-transaction/confirm-transaction.duck'
 import {
-  isTokenMethodAction,
-} from '../../helpers/utils/transactions.util'
-import {
   fetchBasicGasAndTimeEstimates,
 } from '../../ducks/gas/gas.duck'
-
-import {
-  getContractMethodData,
-  getTokenParams,
-} from '../../store/actions'
 import ConfirmTransaction from './confirm-transaction.component'
-import { unconfirmedTransactionsListSelector } from '../../selectors'
-import { getMostRecentOverviewPage } from '../../ducks/history/history'
+import { getTotalUnapprovedCount } from '../../selectors/selectors'
+import { unconfirmedTransactionsListSelector } from '../../selectors/confirm-transaction'
 
-const mapStateToProps = (state, ownProps) => {
-  const {
-    metamask: {
-      send,
-      unapprovedTxs,
-    },
-  } = state
-  const { match: { params = {} } } = ownProps
-  const { id } = params
-
-  const unconfirmedTransactions = unconfirmedTransactionsListSelector(state)
-  const totalUnconfirmed = unconfirmedTransactions.length
-  const transaction = totalUnconfirmed
-    ? unapprovedTxs[id] || unconfirmedTransactions[0]
-    : {}
-  const { id: transactionId, transactionCategory } = transaction
+const mapStateToProps = state => {
+  const { metamask: { send }, confirmTransaction } = state
 
   return {
-    totalUnapprovedCount: totalUnconfirmed,
+    totalUnapprovedCount: getTotalUnapprovedCount(state),
     send,
-    unapprovedTxs,
-    id,
-    mostRecentOverviewPage: getMostRecentOverviewPage(state),
-    paramsTransactionId: id && String(id),
-    transactionId: transactionId && String(transactionId),
-    transaction,
-    isTokenMethodAction: isTokenMethodAction(transactionCategory),
+    confirmTransaction,
+    unconfirmedTransactions: unconfirmedTransactionsListSelector(state),
   }
 }
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
   return {
-    setTransactionToConfirm: (transactionId) => {
-      dispatch(setTransactionToConfirm(transactionId))
-    },
+    setTransactionToConfirm: transactionId => dispatch(setTransactionToConfirm(transactionId)),
     clearConfirmTransaction: () => dispatch(clearConfirmTransaction()),
     fetchBasicGasAndTimeEstimates: () => dispatch(fetchBasicGasAndTimeEstimates()),
-    getContractMethodData: (data) => dispatch(getContractMethodData(data)),
-    getTokenParams: (tokenAddress) => dispatch(getTokenParams(tokenAddress)),
   }
 }
 

@@ -1,17 +1,17 @@
-import * as actionConstants from '../../store/actionConstants'
+const extend = require('xtend')
+const actions = require('../../store/actions')
 
-export default function reduceLocaleMessages (state = {}, { type, value }) {
-  switch (type) {
-    case actionConstants.SET_CURRENT_LOCALE:
-      return {
-        ...state,
-        current: value.messages,
-      }
+module.exports = reduceMetamask
+
+function reduceMetamask (state, action) {
+  const localeMessagesState = extend({}, state.localeMessages)
+
+  switch (action.type) {
+    case actions.SET_LOCALE_MESSAGES:
+      return extend(localeMessagesState, {
+        current: action.value,
+      })
     default:
-      return state
+      return localeMessagesState
   }
 }
-
-export const getCurrentLocaleMessages = (state) => state.localeMessages.current
-
-export const getEnLocaleMessages = (state) => state.localeMessages.en

@@ -1,9 +1,10 @@
+import log from 'loglevel'
 import {
   conversionRateSelector,
   currentCurrencySelector,
   unconfirmedTransactionsHashSelector,
   getNativeCurrency,
-} from '../../selectors'
+} from '../../selectors/confirm-transaction'
 
 import {
   getValueFromWeiHex,
@@ -17,14 +18,17 @@ import {
 
 import {
   getTokenData,
+  getMethodData,
+  isSmartContractAddress,
   sumHexes,
 } from '../../helpers/utils/transactions.util'
 
+import { getSymbolAndDecimals } from '../../helpers/utils/token-util'
 import { conversionUtil } from '../../helpers/utils/conversion-util'
 import { addHexPrefix } from 'ethereumjs-util'
 
 // Actions
-const createActionType = (action) => `metamask/confirm-transaction/${action}`
+const createActionType = action => `metamask/confirm-transaction/${action}`
 
 const UPDATE_TX_DATA = createActionType('UPDATE_TX_DATA')
 const CLEAR_TX_DATA = createActionType('CLEAR_TX_DATA')
@@ -66,102 +70,102 @@ const initState = {
 }
 
 // Reducer
-export default function reducer (state = initState, action = {}) {
+export default function reducer ({ confirmTransaction: confirmState = initState }, action = {}) {
   switch (action.type) {
     case UPDATE_TX_DATA:
       return {
-        ...state,
+        ...confirmState,
         txData: {
           ...action.payload,
         },
       }
     case CLEAR_TX_DATA:
       return {
-        ...state,
+        ...confirmState,
         txData: {},
       }
     case UPDATE_TOKEN_DATA:
       return {
-        ...state,
+        ...confirmState,
         tokenData: {
           ...action.payload,
         },
       }
     case CLEAR_TOKEN_DATA:
       return {
-        ...state,
+        ...confirmState,
         tokenData: {},
       }
     case UPDATE_METHOD_DATA:
       return {
-        ...state,
+        ...confirmState,
         methodData: {
           ...action.payload,
         },
       }
     case CLEAR_METHOD_DATA:
       return {
-        ...state,
+        ...confirmState,
         methodData: {},
       }
     case UPDATE_TRANSACTION_AMOUNTS:
       const { fiatTransactionAmount, ethTransactionAmount, hexTransactionAmount } = action.payload
       return {
-        ...state,
-        fiatTransactionAmount: fiatTransactionAmount || state.fiatTransactionAmount,
-        ethTransactionAmount: ethTransactionAmount || state.ethTransactionAmount,
-        hexTransactionAmount: hexTransactionAmount || state.hexTransactionAmount,
+        ...confirmState,
+        fiatTransactionAmount: fiatTransactionAmount || confirmState.fiatTransactionAmount,
+        ethTransactionAmount: ethTransactionAmount || confirmState.ethTransactionAmount,
+        hexTransactionAmount: hexTransactionAmount || confirmState.hexTransactionAmount,
       }
     case UPDATE_TRANSACTION_FEES:
       const { fiatTransactionFee, ethTransactionFee, hexTransactionFee } = action.payload
       return {
-        ...state,
-        fiatTransactionFee: fiatTransactionFee || state.fiatTransactionFee,
-        ethTransactionFee: ethTransactionFee || state.ethTransactionFee,
-        hexTransactionFee: hexTransactionFee || state.hexTransactionFee,
+        ...confirmState,
+        fiatTransactionFee: fiatTransactionFee || confirmState.fiatTransactionFee,
+        ethTransactionFee: ethTransactionFee || confirmState.ethTransactionFee,
+        hexTransactionFee: hexTransactionFee || confirmState.hexTransactionFee,
       }
     case UPDATE_TRANSACTION_TOTALS:
       const { fiatTransactionTotal, ethTransactionTotal, hexTransactionTotal } = action.payload
       return {
-        ...state,
-        fiatTransactionTotal: fiatTransactionTotal || state.fiatTransactionTotal,
-        ethTransactionTotal: ethTransactionTotal || state.ethTransactionTotal,
-        hexTransactionTotal: hexTransactionTotal || state.hexTransactionTotal,
+        ...confirmState,
+        fiatTransactionTotal: fiatTransactionTotal || confirmState.fiatTransactionTotal,
+        ethTransactionTotal: ethTransactionTotal || confirmState.ethTransactionTotal,
+        hexTransactionTotal: hexTransactionTotal || confirmState.hexTransactionTotal,
       }
     case UPDATE_TOKEN_PROPS:
       const { tokenSymbol = '', tokenDecimals = '' } = action.payload
       return {
-        ...state,
+        ...confirmState,
         tokenProps: {
-          ...state.tokenProps,
+          ...confirmState.tokenProps,
           tokenSymbol,
           tokenDecimals,
         },
       }
     case UPDATE_NONCE:
       return {
-        ...state,
+        ...confirmState,
         nonce: action.payload,
       }
     case UPDATE_TO_SMART_CONTRACT:
       return {
-        ...state,
+        ...confirmState,
         toSmartContract: action.payload,
       }
     case FETCH_DATA_START:
       return {
-        ...state,
+        ...confirmState,
         fetchingData: true,
       }
     case FETCH_DATA_END:
       return {
-        ...state,
+        ...confirmState,
         fetchingData: false,
       }
     case CLEAR_CONFIRM_TRANSACTION:
       return initState
     default:
-      return state
+      return confirmState
   }
 }
 
@@ -344,7 +348,7 @@ export function updateTxDataAndCalculate (txData) {
 }
 
 export function setTransactionToConfirm (transactionId) {
-  return (dispatch, getState) => {
+  return async (dispatch, getState) => {
     const state = getState()
     const unconfirmedTransactionsHash = unconfirmedTransactionsHashSelector(state)
     const transaction = unconfirmedTransactionsHash[transactionId]
@@ -360,14 +364,34 @@ export function setTransactionToConfirm (transactionId) {
       dispatch(updateTxDataAndCalculate(txData))
 
       const { txParams } = transaction
+      const { to } = txParams
 
       if (txParams.data) {
-        const { data } = txParams
+        const { tokens: existingTokens } = state
+        const { data, to: tokenAddress } = txParams
 
+        dispatch(setFetchingData(true))
+        const methodData = await getMethodData(data)
+        dispatch(updateMethodData(methodData))
+
+        try {
+          const toSmartContract = await isSmartContractAddress(to)
+          dispatch(updateToSmartContract(toSmartContract))
+        } catch (error) {
+          log.error(error)
+        }
+        dispatch(setFetchingData(false))
 
         const tokenData = getTokenData(data)
         dispatch(updateTokenData(tokenData))
 
+        try {
+          const tokenSymbolData = await getSymbolAndDecimals(tokenAddress, existingTokens) || {}
+          const { symbol: tokenSymbol = '', decimals: tokenDecimals = '' } = tokenSymbolData
+          dispatch(updateTokenProps({ tokenSymbol, tokenDecimals }))
+        } catch (error) {
+          dispatch(updateTokenProps({ tokenSymbol: '', tokenDecimals: '' }))
+        }
       }
 
       if (txParams.nonce) {

@@ -6,7 +6,7 @@
   align-items: center;
 
   &__label {
-    font-size: 0.75rem;
+    font-size: .75rem;
     font-weight: 500;
     color: $scorpion;
     text-transform: uppercase;
@@ -29,29 +29,22 @@
   }
 
   &__header-text {
-    font-size: 0.75rem;
+    font-size: .75rem;
     text-transform: uppercase;
     margin-bottom: 6px;
     color: $scorpion;
 
     &--edit {
-      color: $primary-blue;
+      color: $curious-blue;
       cursor: pointer;
     }
 
     &--total {
-      font-size: 0.625rem;
+      font-size: .625rem;
     }
   }
 
   .advanced-gas-inputs__gas-edit-rows {
     margin-bottom: 16px;
-  }
-
-  .custom-nonce-input {
-    input {
-      width: 90px;
-      font-size: 1rem;
-    }
   }
 }

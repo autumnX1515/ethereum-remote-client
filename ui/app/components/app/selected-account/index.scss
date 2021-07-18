@@ -5,27 +5,17 @@
   align-items: center;
   flex: 1;
 
-  &__tooltip-wrapper {
-    width: 100%;
-  }
-
   &__name {
-    width: 100%;
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 19px;
-    color: $black;
+    max-width: 200px;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
     text-align: center;
-    margin-bottom: 4px;
   }
 
   &__address {
-    font-size: 0.75rem;
-    line-height: 0.75rem;
-    color: #989a9b;
+    font-size: .75rem;
+    color: $silver-chalice;
   }
 
   &__clickable {
@@ -33,13 +23,12 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin: 4px 0;
-    padding: 6px 1px;
+    padding: 5px 15px;
     border-radius: 10px;
     cursor: pointer;
 
     &:hover {
-      background-color: $Grey-000;
+      background-color: #e8e6e8;
     }
 
     &:active {

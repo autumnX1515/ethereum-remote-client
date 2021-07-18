@@ -25,7 +25,6 @@ const switchToPopupTab = (event) => {
       return;
   }
 
-  // TODO: remove this query, or add `tabs` permission. This does not work.
   // triggered from 'beforeunload' event
   // find tab by popup pattern and switch to it
   chrome.tabs.query({

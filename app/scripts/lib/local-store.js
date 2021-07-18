@@ -1,11 +1,10 @@
-import extension from 'extensionizer'
-import log from 'loglevel'
-import { checkForError } from './util'
+const extension = require('extensionizer')
+const log = require('loglevel')
 
 /**
  * A wrapper around the extension's storage local API
  */
-export default class ExtensionStore {
+module.exports = class ExtensionStore {
   /**
    * @constructor
    */
@@ -18,12 +17,10 @@ export default class ExtensionStore {
 
   /**
    * Returns all of the keys currently saved
-   * @returns {Promise<*>}
+   * @return {Promise<*>}
    */
   async get () {
-    if (!this.isSupported) {
-      return undefined
-    }
+    if (!this.isSupported) return undefined
     const result = await this._get()
     // extension.storage.local always returns an obj
     // if the object is empty, treat it as undefined
@@ -36,8 +33,8 @@ export default class ExtensionStore {
 
   /**
    * Sets the key in local state
-   * @param {Object} state - The state to set
-   * @returns {Promise<void>}
+   * @param {object} state - The state to set
+   * @return {Promise<void>}
    */
   async set (state) {
     return this._set(state)
@@ -46,13 +43,13 @@ export default class ExtensionStore {
   /**
    * Returns all of the keys currently saved
    * @private
-   * @returns {Object} - the key-value map from local storage
+   * @return {object} the key-value map from local storage
    */
   _get () {
     const local = extension.storage.local
     return new Promise((resolve, reject) => {
       local.get(null, (/** @type {any} */ result) => {
-        const err = checkForError()
+        const err = extension.runtime.lastError
         if (err) {
           reject(err)
         } else {
@@ -64,15 +61,15 @@ export default class ExtensionStore {
 
   /**
    * Sets the key in local state
-   * @param {Object} obj - The key to set
-   * @returns {Promise<void>}
+   * @param {object} obj - The key to set
+   * @return {Promise<void>}
    * @private
    */
   _set (obj) {
     const local = extension.storage.local
     return new Promise((resolve, reject) => {
       local.set(obj, () => {
-        const err = checkForError()
+        const err = extension.runtime.lastError
         if (err) {
           reject(err)
         } else {
@@ -85,7 +82,7 @@ export default class ExtensionStore {
 
 /**
  * Returns whether or not the given object contains no keys
- * @param {Object} obj - The object to check
+ * @param {object} obj - The object to check
  * @returns {boolean}
  */
 function isEmpty (obj) {

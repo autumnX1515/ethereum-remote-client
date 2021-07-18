@@ -1,22 +1,20 @@
 import { connect } from 'react-redux'
 import AddToken from './add-token.component'
 
-import { setPendingTokens, clearPendingTokens } from '../../store/actions'
-import { getMostRecentOverviewPage } from '../../ducks/history/history'
+const { setPendingTokens, clearPendingTokens } = require('../../store/actions')
 
-const mapStateToProps = (state) => {
-  const { metamask: { identities, tokens, pendingTokens } } = state
+const mapStateToProps = ({ metamask }) => {
+  const { identities, tokens, pendingTokens } = metamask
   return {
     identities,
-    mostRecentOverviewPage: getMostRecentOverviewPage(state),
     tokens,
     pendingTokens,
   }
 }
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
   return {
-    setPendingTokens: (tokens) => dispatch(setPendingTokens(tokens)),
+    setPendingTokens: tokens => dispatch(setPendingTokens(tokens)),
     clearPendingTokens: () => dispatch(clearPendingTokens()),
   }
 }

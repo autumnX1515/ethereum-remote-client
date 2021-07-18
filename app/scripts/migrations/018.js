@@ -6,18 +6,15 @@ This migration updates "transaction state history" to diffs style
 
 */
 
-import { cloneDeep } from 'lodash'
-import {
-  snapshotFromTxMeta,
-  migrateFromSnapshotsToDiffs,
-} from '../controllers/transactions/lib/tx-state-history-helpers'
+const clone = require('clone')
+const txStateHistoryHelper = require('../controllers/transactions/lib/tx-state-history-helper')
 
 
-export default {
+module.exports = {
   version,
 
   migrate: function (originalVersionedData) {
-    const versionedData = cloneDeep(originalVersionedData)
+    const versionedData = clone(originalVersionedData)
     versionedData.meta.version = version
     try {
       const state = versionedData.data
@@ -38,17 +35,17 @@ function transformState (state) {
     newState.TransactionController.transactions = transactions.map((txMeta) => {
       // no history: initialize
       if (!txMeta.history || txMeta.history.length === 0) {
-        const snapshot = snapshotFromTxMeta(txMeta)
+        const snapshot = txStateHistoryHelper.snapshotFromTxMeta(txMeta)
         txMeta.history = [snapshot]
         return txMeta
       }
       // has history: migrate
       const newHistory = (
-        migrateFromSnapshotsToDiffs(txMeta.history)
+        txStateHistoryHelper.migrateFromSnapshotsToDiffs(txMeta.history)
         // remove empty diffs
-          .filter((entry) => {
-            return !Array.isArray(entry) || entry.length > 0
-          })
+        .filter((entry) => {
+          return !Array.isArray(entry) || entry.length > 0
+        })
       )
       txMeta.history = newHistory
       return txMeta

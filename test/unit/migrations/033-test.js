@@ -1,7 +1,7 @@
-import assert from 'assert'
-import migration33 from '../../../app/scripts/migrations/033'
+const assert = require('assert')
+const migration33 = require('../../../app/scripts/migrations/033')
 
-describe('Migration to delete notice controller', function () {
+describe('Migration to delete notice controller', () => {
   const oldStorage = {
     'meta': {},
     'data': {
@@ -31,9 +31,9 @@ describe('Migration to delete notice controller', function () {
     },
   }
 
-  it('removes notice controller from state', function () {
+  it('removes notice controller from state', () => {
     migration33.migrate(oldStorage)
-      .then((newStorage) => {
+      .then(newStorage => {
         assert.equal(newStorage.data.NoticeController, undefined)
       })
   })

@@ -1,7 +1,9 @@
 @import 'confirm-seed-phrase/index';
+
 @import 'reveal-seed-phrase/index';
 
 .seed-phrase {
+
   &__sections {
     display: flex;
 
@@ -32,7 +34,7 @@
     }
 
     .first-time-flow__text-block {
-      color: #5a5a5a;
+      color: #5A5A5A;
     }
   }
 }

@@ -1,19 +1,20 @@
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
-import { compose } from 'redux'
+import { compose } from 'recompose'
 import { closeWelcomeScreen } from '../../../store/actions'
 import Welcome from './welcome.component'
 
 const mapStateToProps = ({ metamask }) => {
-  const { welcomeScreenSeen, participateInMetaMetrics } = metamask
+  const { welcomeScreenSeen, isInitialized, participateInMetaMetrics } = metamask
 
   return {
     welcomeScreenSeen,
+    isInitialized,
     participateInMetaMetrics,
   }
 }
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
   return {
     closeWelcomeScreen: () => dispatch(closeWelcomeScreen()),
   }
@@ -21,5 +22,5 @@ const mapDispatchToProps = (dispatch) => {
 
 export default compose(
   withRouter,
-  connect(mapStateToProps, mapDispatchToProps),
+  connect(mapStateToProps, mapDispatchToProps)
 )(Welcome)

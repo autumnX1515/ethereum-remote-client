@@ -7,24 +7,19 @@
  * on each new block.
  */
 
-import EthQuery from 'eth-query'
+const EthQuery = require('eth-query')
+const ObservableStore = require('obs-store')
+const log = require('loglevel')
+const pify = require('pify')
+const Web3 = require('web3')
+const SINGLE_CALL_BALANCES_ABI = require('single-call-balance-checker-abi')
 
-import ObservableStore from 'obs-store'
-import log from 'loglevel'
-import pify from 'pify'
-import Web3 from 'web3'
-import SINGLE_CALL_BALANCES_ABI from 'single-call-balance-checker-abi'
-import { bnToHex } from './util'
-import { MAINNET_NETWORK_ID, RINKEBY_NETWORK_ID, ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID } from '../controllers/network/enums'
+const { bnToHex } = require('./util')
+const { MAINNET_CODE, RINKEYBY_CODE, ROPSTEN_CODE, KOVAN_CODE } = require('../controllers/network/enums')
+const { SINGLE_CALL_BALANCES_ADDRESS, SINGLE_CALL_BALANCES_ADDRESS_RINKEBY, SINGLE_CALL_BALANCES_ADDRESS_ROPSTEN, SINGLE_CALL_BALANCES_ADDRESS_KOVAN } = require('../controllers/network/contract-addresses')
 
-import {
-  SINGLE_CALL_BALANCES_ADDRESS,
-  SINGLE_CALL_BALANCES_ADDRESS_RINKEBY,
-  SINGLE_CALL_BALANCES_ADDRESS_ROPSTEN,
-  SINGLE_CALL_BALANCES_ADDRESS_KOVAN,
-} from '../controllers/network/contract-addresses'
 
-export default class AccountTracker {
+class AccountTracker {
 
   /**
    * This module is responsible for tracking any number of accounts and caching their current balances & transaction
@@ -33,7 +28,7 @@ export default class AccountTracker {
    * It also tracks transaction hashes, and checks their inclusion status on each new block.
    *
    * @typedef {Object} AccountTracker
-   * @param {Object} opts - Initialize various properties of the class.
+   * @param {Object} opts Initialize various properties of the class.
    * @property {Object} store The stored object containing all accounts to track, as well as the current block's gas limit.
    * @property {Object} store.accounts The accounts currently stored in this AccountTracker
    * @property {string} store.currentBlockGasLimit A hex string indicating the gas limit of the current block
@@ -56,7 +51,7 @@ export default class AccountTracker {
     this._blockTracker = opts.blockTracker
     // blockTracker.currentBlock may be null
     this._currentBlockNumber = this._blockTracker.getCurrentBlock()
-    this._blockTracker.once('latest', (blockNumber) => {
+    this._blockTracker.once('latest', blockNumber => {
       this._currentBlockNumber = blockNumber
     })
     // bind function for easier listener syntax
@@ -87,7 +82,7 @@ export default class AccountTracker {
    * Once this AccountTracker's accounts are up to date with those referenced by the passed addresses, each
    * of these accounts are given an updated balance via EthQuery.
    *
-   * @param {array} address - The array of hex addresses for accounts with which this AccountTracker's accounts should be
+   * @param {array} address The array of hex addresses for accounts with which this AccountTracker's accounts should be
    * in sync
    *
    */
@@ -117,34 +112,32 @@ export default class AccountTracker {
    * Adds new addresses to track the balances of
    * given a balance as long this._currentBlockNumber is defined.
    *
-   * @param {array} addresses - An array of hex addresses of new accounts to track
+   * @param {array} addresses An array of hex addresses of new accounts to track
    *
    */
   addAccounts (addresses) {
     const accounts = this.store.getState().accounts
     // add initial state for addresses
-    addresses.forEach((address) => {
+    addresses.forEach(address => {
       accounts[address] = {}
     })
     // save accounts state
     this.store.updateState({ accounts })
     // fetch balances for the accounts if there is block number ready
-    if (!this._currentBlockNumber) {
-      return
-    }
+    if (!this._currentBlockNumber) return
     this._updateAccounts()
   }
 
   /**
    * Removes accounts from being tracked
    *
-   * @param {array} an - array of hex addresses to stop tracking
+   * @param {array} an array of hex addresses to stop tracking
    *
    */
   removeAccount (addresses) {
     const accounts = this.store.getState().accounts
     // remove each state object
-    addresses.forEach((address) => {
+    addresses.forEach(address => {
       delete accounts[address]
     })
     // save accounts state
@@ -152,19 +145,11 @@ export default class AccountTracker {
   }
 
   /**
-   * Removes all addresses and associated balances
-   */
-
-  clearAccounts () {
-    this.store.updateState({ accounts: {} })
-  }
-
-  /**
    * Given a block, updates this AccountTracker's currentBlockGasLimit, and then updates each local account's balance
    * via EthQuery
    *
    * @private
-   * @param {number} blockNumber - the block number to update to.
+   * @param {number} blockNumber the block number to update to.
    * @fires 'block' The updated state, if all account updates are successful
    *
    */
@@ -173,9 +158,7 @@ export default class AccountTracker {
 
     // block gasLimit polling shouldn't be in account-tracker shouldn't be here...
     const currentBlock = await this._query.getBlockByNumber(blockNumber, false)
-    if (!currentBlock) {
-      return
-    }
+    if (!currentBlock) return
     const currentBlockGasLimit = currentBlock.gasLimit
     this.store.updateState({ currentBlockGasLimit })
 
@@ -190,33 +173,33 @@ export default class AccountTracker {
    * balanceChecker is deployed on main eth (test)nets and requires a single call
    * for all other networks, calls this._updateAccount for each account in this.store
    *
-   * @returns {Promise} - after all account balances updated
+   * @returns {Promise} after all account balances updated
    *
    */
   async _updateAccounts () {
     const accounts = this.store.getState().accounts
     const addresses = Object.keys(accounts)
-    const currentNetwork = this.network.getNetworkState()
+    const currentNetwork = parseInt(this.network.getNetworkState())
 
     switch (currentNetwork) {
-      case MAINNET_NETWORK_ID.toString():
-        await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS)
-        break
+      case MAINNET_CODE:
+      await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS)
+      break
 
-      case RINKEBY_NETWORK_ID.toString():
-        await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS_RINKEBY)
-        break
+      case RINKEYBY_CODE:
+      await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS_RINKEBY)
+      break
 
-      case ROPSTEN_NETWORK_ID.toString():
-        await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS_ROPSTEN)
-        break
+      case ROPSTEN_CODE:
+      await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS_ROPSTEN)
+      break
 
-      case KOVAN_NETWORK_ID.toString():
-        await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS_KOVAN)
-        break
+      case KOVAN_CODE:
+      await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS_KOVAN)
+      break
 
       default:
-        await Promise.all(addresses.map(this._updateAccount.bind(this)))
+      await Promise.all(addresses.map(this._updateAccount.bind(this)))
     }
   }
 
@@ -224,8 +207,8 @@ export default class AccountTracker {
    * Updates the current balance of an account.
    *
    * @private
-   * @param {string} address - A hex address of a the account to be updated
-   * @returns {Promise} - after the account balance is updated
+   * @param {string} address A hex address of a the account to be updated
+   * @returns {Promise} after the account balance is updated
    *
    */
   async _updateAccount (address) {
@@ -235,9 +218,7 @@ export default class AccountTracker {
     // update accounts state
     const { accounts } = this.store.getState()
     // only populate if the entry is still present
-    if (!accounts[address]) {
-      return
-    }
+    if (!accounts[address]) return
     accounts[address] = result
     this.store.updateState({ accounts })
   }
@@ -267,3 +248,5 @@ export default class AccountTracker {
   }
 
 }
+
+module.exports = AccountTracker

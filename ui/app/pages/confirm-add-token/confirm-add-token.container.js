@@ -1,20 +1,18 @@
 import { connect } from 'react-redux'
 import ConfirmAddToken from './confirm-add-token.component'
 
-import { addTokens, clearPendingTokens } from '../../store/actions'
-import { getMostRecentOverviewPage } from '../../ducks/history/history'
+const { addTokens, clearPendingTokens } = require('../../store/actions')
 
-const mapStateToProps = (state) => {
-  const { metamask: { pendingTokens } } = state
+const mapStateToProps = ({ metamask }) => {
+  const { pendingTokens } = metamask
   return {
-    mostRecentOverviewPage: getMostRecentOverviewPage(state),
     pendingTokens,
   }
 }
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
   return {
-    addTokens: (tokens) => dispatch(addTokens(tokens)),
+    addTokens: tokens => dispatch(addTokens(tokens)),
     clearPendingTokens: () => dispatch(clearPendingTokens()),
   }
 }

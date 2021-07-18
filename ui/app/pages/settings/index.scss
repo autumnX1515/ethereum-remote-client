@@ -1,8 +1,6 @@
 @import 'info-tab/index';
-@import 'alerts-tab/alerts-tab';
-@import 'networks-tab/index';
+
 @import 'settings-tab/index';
-@import 'contact-list-tab/index';
 
 .settings-page {
   position: relative;
@@ -15,69 +13,12 @@
     flex-flow: row nowrap;
     padding: 12px 24px;
     align-items: center;
+    border-bottom: 1px solid $alto;
     flex: 0 0 auto;
 
     &__title {
       flex: 1 0 auto;
       font-size: 24px;
-    }
-  }
-
-  &__subheader,
-  &__subheader--link {
-    padding: 16px 4px;
-    font-size: 20px;
-    border-bottom: 1px solid $alto;
-    margin-right: 24px;
-    height: 72px;
-    align-items: center;
-    display: flex;
-    flex-flow: row nowrap;
-
-    @media screen and (max-width: 575px) {
-      display: none;
-    }
-  }
-
-  &__subheader--link {
-    cursor: pointer;
-    margin-right: 4px;
-  }
-
-  &__subheader--link:hover {
-    cursor: pointer;
-    color: $primary-blue;
-  }
-
-  &__subheader--break {
-    margin-right: 4px;
-    padding-right: 4px;
-  }
-
-  &__sub-header {
-    height: 72px;
-    border-bottom: 1px solid #d8d8d8;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0;
-
-    @media screen and (max-width: 575px) {
-      height: 69px;
-      position: relative;
-      text-align: center;
-    }
-  }
-
-  &__sub-header-text {
-    font-family: Roboto;
-    font-style: normal;
-    font-weight: normal;
-    font-size: 20px;
-
-    @media screen and (max-width: 575px) {
-      font-size: 16px;
-      width: 100%;
     }
   }
 
@@ -89,16 +30,12 @@
       background-image: url('/images/caret-left-black.svg');
       width: 18px;
       height: 18px;
-      opacity: 0.5;
+      opacity: .5;
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
       margin-right: 16px;
       cursor: pointer;
-
-      [dir='rtl'] & {
-        transform: rotate(180deg);
-      }
     }
   }
 
@@ -112,9 +49,8 @@
   &__content {
     display: flex;
     flex-flow: row nowrap;
-    height: 100%;
+    height: auto;
     overflow: auto;
-    border-top: 1px solid #d8d8d8;
 
     &__tabs {
       display: flex;
@@ -122,23 +58,15 @@
       flex: 1 1 auto;
 
       @media screen and (min-width: 576px) {
-        flex: 0 0 40%;
+        flex: 0 0 32%;
         max-width: 210px;
-        padding-top: 8px;
-      }
-
-      .tab-bar__tab {
-        @media screen and (min-width: 576px) {
-          padding: 16px 24px 0;
-        }
+        border-right: 1px solid $alto;
       }
     }
 
     &__modules {
       overflow-y: auto;
       flex: 1 1 auto;
-      display: flex;
-      flex-flow: column;
 
       @media screen and (max-width: 575px) {
         display: none;
@@ -148,10 +76,6 @@
 
   &__body {
     padding: 12px 24px;
-
-    @media screen and (min-width: 576px) {
-      padding: 12px;
-    }
   }
 
   &__content-row {
@@ -165,7 +89,8 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    padding: 0 5px;
+    min-height: 71px;
 
     @media screen and (max-width: 575px) {
       height: initial;
@@ -174,11 +99,6 @@
 
     &--without-height {
       height: initial;
-    }
-
-    &--disabled {
-      cursor: not-allowed;
-      opacity: 0.5;
     }
   }
 
@@ -203,25 +123,6 @@
     }
   }
 
-  &__copy-icon {
-    padding-left: 4px;
-  }
-
-  &__button-group {
-    display: flex;
-    margin-left: auto;
-  }
-
-  &__address-book-button {
-    font-size: 1rem;
-    line-height: 1.1875rem;
-    padding: 0;
-  }
-
-  &__address-book-button + &__address-book-button {
-    margin-left: 1.875rem;
-  }
-
   &--selected {
     .settings-page {
       &__content {
@@ -237,15 +138,6 @@
           }
         }
       }
-    }
-  }
-
-  .toggle-button {
-    /*rtl:ignore*/
-    direction: ltr;
-
-    [dir='rtl'] & {
-      justify-content: flex-end;
     }
   }
 }

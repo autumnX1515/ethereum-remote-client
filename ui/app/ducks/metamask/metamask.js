@@ -1,24 +1,30 @@
-import * as actionConstants from '../../store/actionConstants'
-import { ALERT_TYPES } from '../../../../app/scripts/controllers/alert'
+const extend = require('xtend')
+const actions = require('../../store/actions')
+const { getEnvironmentType } = require('../../../../app/scripts/lib/util')
+const { ENVIRONMENT_TYPE_POPUP } = require('../../../../app/scripts/lib/enums')
+const { OLD_UI_NETWORK_TYPE } = require('../../../../app/scripts/controllers/network/enums')
 
-export default function reduceMetamask (state = {}, action) {
-  const metamaskState = Object.assign({
+module.exports = reduceMetamask
+
+function reduceMetamask (state, action) {
+  let newState
+
+  // clone + defaults
+  var metamaskState = extend({
     isInitialized: false,
     isUnlocked: false,
     isAccountMenuOpen: false,
-    rpcUrl: 'https://rawtestrpc.metamask.io/',
+    isPopup: getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_POPUP,
+    rpcTarget: 'https://rawtestrpc.metamask.io/',
     identities: {},
     unapprovedTxs: {},
     frequentRpcList: [],
     addressBook: [],
+    selectedTokenAddress: null,
     contractExchangeRates: {},
-    tokens: [{
-      address: '0x0d8775f648430679a709e98d2b0cb6250d2887ef',
-      decimals: 18,
-      symbol: 'BAT',
-    }],
+    tokenExchangeRates: {},
+    tokens: [],
     pendingTokens: {},
-    customNonceValue: '',
     send: {
       gasLimit: null,
       gasPrice: null,
@@ -31,228 +37,244 @@ export default function reduceMetamask (state = {}, action) {
       errors: {},
       maxModeOn: false,
       editingTransactionId: null,
+      forceGasMin: null,
       toNickname: '',
-      ensResolution: null,
-      ensResolutionError: '',
     },
+    coinOptions: {},
     useBlockie: false,
     featureFlags: {},
+    networkEndpointType: OLD_UI_NETWORK_TYPE,
+    isRevealingSeedWords: false,
     welcomeScreenSeen: false,
     currentLocale: '',
     preferences: {
-      autoLockTimeLimit: undefined,
-      showFiatInTestnets: false,
       useNativeCurrencyAsPrimaryCurrency: true,
+      showFiatInTestnets: false,
     },
     firstTimeFlowType: null,
     completedOnboarding: false,
     knownMethodData: {},
     participateInMetaMetrics: null,
     metaMetricsSendCount: 0,
-    nextNonce: null,
-  }, state)
+  }, state.metamask)
 
   switch (action.type) {
 
-    case actionConstants.UPDATE_METAMASK_STATE:
-      return { ...metamaskState, ...action.value }
+    case actions.SHOW_ACCOUNTS_PAGE:
+      newState = extend(metamaskState, {
+        isRevealingSeedWords: false,
+      })
+      delete newState.seedWords
+      return newState
 
-    case actionConstants.LOCK_METAMASK:
-      return {
-        ...metamaskState,
-        isUnlocked: false,
-      }
+    case actions.UPDATE_METAMASK_STATE:
+      return extend(metamaskState, action.value)
 
-    case actionConstants.SET_RPC_TARGET:
-      return {
-        ...metamaskState,
-        provider: {
-          type: 'rpc',
-          rpcUrl: action.value,
-        },
-      }
-
-    case actionConstants.SET_PROVIDER_TYPE:
-      return {
-        ...metamaskState,
-        provider: {
-          type: action.value,
-        },
-      }
-
-    case actionConstants.SHOW_ACCOUNT_DETAIL:
-      return {
-        ...metamaskState,
+    case actions.UNLOCK_METAMASK:
+      return extend(metamaskState, {
         isUnlocked: true,
         isInitialized: true,
         selectedAddress: action.value,
-      }
+      })
 
-    case actionConstants.SET_ACCOUNT_LABEL:
+    case actions.LOCK_METAMASK:
+      return extend(metamaskState, {
+        isUnlocked: false,
+      })
+
+    case actions.SET_RPC_LIST:
+      return extend(metamaskState, {
+        frequentRpcList: action.value,
+      })
+
+    case actions.SET_RPC_TARGET:
+      return extend(metamaskState, {
+        provider: {
+          type: 'rpc',
+          rpcTarget: action.value,
+        },
+      })
+
+    case actions.SET_PROVIDER_TYPE:
+      return extend(metamaskState, {
+        provider: {
+          type: action.value,
+        },
+      })
+
+    case actions.COMPLETED_TX:
+      var stringId = String(action.id)
+      newState = extend(metamaskState, {
+        unapprovedTxs: {},
+        unapprovedMsgs: {},
+      })
+      for (const id in metamaskState.unapprovedTxs) {
+        if (id !== stringId) {
+          newState.unapprovedTxs[id] = metamaskState.unapprovedTxs[id]
+        }
+      }
+      for (const id in metamaskState.unapprovedMsgs) {
+        if (id !== stringId) {
+          newState.unapprovedMsgs[id] = metamaskState.unapprovedMsgs[id]
+        }
+      }
+      return newState
+
+    case actions.EDIT_TX:
+      return extend(metamaskState, {
+        send: {
+          ...metamaskState.send,
+          editingTransactionId: action.value,
+        },
+      })
+
+
+    case actions.SHOW_NEW_VAULT_SEED:
+      return extend(metamaskState, {
+        isRevealingSeedWords: true,
+        seedWords: action.value,
+      })
+
+    case actions.CLEAR_SEED_WORD_CACHE:
+      newState = extend(metamaskState, {
+        isUnlocked: true,
+        isInitialized: true,
+        selectedAddress: action.value,
+      })
+      delete newState.seedWords
+      return newState
+
+    case actions.SHOW_ACCOUNT_DETAIL:
+      newState = extend(metamaskState, {
+        isUnlocked: true,
+        isInitialized: true,
+        selectedAddress: action.value,
+      })
+      delete newState.seedWords
+      return newState
+
+    case actions.SET_SELECTED_TOKEN:
+      return extend(metamaskState, {
+        selectedTokenAddress: action.value,
+      })
+
+    case actions.SET_ACCOUNT_LABEL:
       const account = action.value.account
       const name = action.value.label
       const id = {}
-      id[account] = Object.assign({}, metamaskState.identities[account], { name })
-      const identities = Object.assign({}, metamaskState.identities, id)
-      return Object.assign(metamaskState, { identities })
+      id[account] = extend(metamaskState.identities[account], { name })
+      const identities = extend(metamaskState.identities, id)
+      return extend(metamaskState, { identities })
 
-    case actionConstants.SET_CURRENT_FIAT:
-      return Object.assign(metamaskState, {
+    case actions.SET_CURRENT_FIAT:
+      return extend(metamaskState, {
         currentCurrency: action.value.currentCurrency,
         conversionRate: action.value.conversionRate,
         conversionDate: action.value.conversionDate,
       })
 
-    case actionConstants.UPDATE_TOKENS:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_TOKENS:
+      return extend(metamaskState, {
         tokens: action.newTokens,
-      }
+      })
 
     // metamask.send
-    case actionConstants.UPDATE_GAS_LIMIT:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_GAS_LIMIT:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           gasLimit: action.value,
         },
-      }
-    case actionConstants.UPDATE_CUSTOM_NONCE:
-      return {
-        ...metamaskState,
-        customNonceValue: action.value,
-      }
-    case actionConstants.UPDATE_GAS_PRICE:
-      return {
-        ...metamaskState,
+      })
+
+    case actions.UPDATE_GAS_PRICE:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           gasPrice: action.value,
         },
-      }
+      })
 
-    case actionConstants.TOGGLE_ACCOUNT_MENU:
-      return {
-        ...metamaskState,
+    case actions.TOGGLE_ACCOUNT_MENU:
+      return extend(metamaskState, {
         isAccountMenuOpen: !metamaskState.isAccountMenuOpen,
-      }
+      })
 
-    case actionConstants.UPDATE_GAS_TOTAL:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_GAS_TOTAL:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           gasTotal: action.value,
         },
-      }
+      })
 
-    case actionConstants.UPDATE_SEND_TOKEN_BALANCE:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_SEND_TOKEN_BALANCE:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           tokenBalance: action.value,
         },
-      }
+      })
 
-    case actionConstants.UPDATE_SEND_HEX_DATA:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_SEND_HEX_DATA:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           data: action.value,
         },
-      }
+      })
 
-    case actionConstants.UPDATE_SEND_TO:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_SEND_FROM:
+      return extend(metamaskState, {
+        send: {
+          ...metamaskState.send,
+          from: action.value,
+        },
+      })
+
+    case actions.UPDATE_SEND_TO:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           to: action.value.to,
           toNickname: action.value.nickname,
         },
-      }
+      })
 
-    case actionConstants.UPDATE_SEND_AMOUNT:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_SEND_AMOUNT:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           amount: action.value,
         },
-      }
+      })
 
-    case actionConstants.UPDATE_MAX_MODE:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_SEND_MEMO:
+      return extend(metamaskState, {
+        send: {
+          ...metamaskState.send,
+          memo: action.value,
+        },
+      })
+
+    case actions.UPDATE_MAX_MODE:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           maxModeOn: action.value,
         },
-      }
+      })
 
-    case actionConstants.UPDATE_SEND:
-      return Object.assign(metamaskState, {
+    case actions.UPDATE_SEND:
+      return extend(metamaskState, {
         send: {
           ...metamaskState.send,
           ...action.value,
         },
       })
 
-    case actionConstants.UPDATE_SEND_TOKEN:
-      const newSend = {
-        ...metamaskState.send,
-        token: action.value,
-      }
-      // erase token-related state when switching back to native currency
-      if (newSend.editingTransactionId && !newSend.token) {
-        const unapprovedTx = newSend?.unapprovedTxs?.[newSend.editingTransactionId] || {}
-        const txParams = unapprovedTx.txParams || {}
-        Object.assign(newSend, {
-          tokenBalance: null,
-          balance: '0',
-          from: unapprovedTx.from || '',
-          unapprovedTxs: {
-            ...newSend.unapprovedTxs,
-            [newSend.editingTransactionId]: {
-              ...unapprovedTx,
-              txParams: {
-                ...txParams,
-                data: '',
-              },
-            },
-          },
-        })
-      }
-      return Object.assign(metamaskState, {
-        send: newSend,
-      })
-
-    case actionConstants.UPDATE_SEND_ENS_RESOLUTION:
-      return {
-        ...metamaskState,
-        send: {
-          ...metamaskState.send,
-          ensResolution: action.payload,
-          ensResolutionError: '',
-        },
-      }
-
-    case actionConstants.UPDATE_SEND_ENS_RESOLUTION_ERROR:
-      return {
-        ...metamaskState,
-        send: {
-          ...metamaskState.send,
-          ensResolution: null,
-          ensResolutionError: action.payload,
-        },
-      }
-
-    case actionConstants.CLEAR_SEND:
-      return {
-        ...metamaskState,
+    case actions.CLEAR_SEND:
+      return extend(metamaskState, {
         send: {
           gasLimit: null,
           gasPrice: null,
@@ -265,120 +287,119 @@ export default function reduceMetamask (state = {}, action) {
           errors: {},
           maxModeOn: false,
           editingTransactionId: null,
+          forceGasMin: null,
           toNickname: '',
         },
-      }
+      })
 
-    case actionConstants.UPDATE_TRANSACTION_PARAMS:
+    case actions.UPDATE_TRANSACTION_PARAMS:
       const { id: txId, value } = action
-      let { currentNetworkTxList } = metamaskState
-      currentNetworkTxList = currentNetworkTxList.map((tx) => {
+      let { selectedAddressTxList } = metamaskState
+      selectedAddressTxList = selectedAddressTxList.map(tx => {
         if (tx.id === txId) {
-          const newTx = Object.assign({}, tx)
-          newTx.txParams = value
-          return newTx
+          tx.txParams = value
         }
         return tx
       })
 
-      return {
-        ...metamaskState,
-        currentNetworkTxList,
-      }
+      return extend(metamaskState, {
+        selectedAddressTxList,
+      })
 
-    case actionConstants.SET_PARTICIPATE_IN_METAMETRICS:
-      return {
-        ...metamaskState,
+    case actions.PAIR_UPDATE:
+      const { value: { marketinfo: pairMarketInfo } } = action
+      return extend(metamaskState, {
+        tokenExchangeRates: {
+          ...metamaskState.tokenExchangeRates,
+          [pairMarketInfo.pair]: pairMarketInfo,
+        },
+      })
+
+    case actions.SHAPESHIFT_SUBVIEW:
+      const { value: { marketinfo: ssMarketInfo, coinOptions } } = action
+      return extend(metamaskState, {
+        tokenExchangeRates: {
+          ...metamaskState.tokenExchangeRates,
+          [ssMarketInfo.pair]: ssMarketInfo,
+        },
+        coinOptions,
+      })
+
+    case actions.SET_PARTICIPATE_IN_METAMETRICS:
+      return extend(metamaskState, {
         participateInMetaMetrics: action.value,
-      }
+      })
 
-    case actionConstants.SET_METAMETRICS_SEND_COUNT:
-      return {
-        ...metamaskState,
+    case actions.SET_METAMETRICS_SEND_COUNT:
+      return extend(metamaskState, {
         metaMetricsSendCount: action.value,
-      }
+      })
 
-    case actionConstants.SET_USE_BLOCKIE:
-      return {
-        ...metamaskState,
+    case actions.SET_USE_BLOCKIE:
+      return extend(metamaskState, {
         useBlockie: action.value,
-      }
+      })
 
-    case actionConstants.UPDATE_FEATURE_FLAGS:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_FEATURE_FLAGS:
+      return extend(metamaskState, {
         featureFlags: action.value,
-      }
+      })
 
-    case actionConstants.CLOSE_WELCOME_SCREEN:
-      return {
-        ...metamaskState,
+    case actions.UPDATE_NETWORK_ENDPOINT_TYPE:
+      return extend(metamaskState, {
+        networkEndpointType: action.value,
+      })
+
+    case actions.CLOSE_WELCOME_SCREEN:
+      return extend(metamaskState, {
         welcomeScreenSeen: true,
-      }
+      })
 
-    case actionConstants.SET_CURRENT_LOCALE:
-      return {
-        ...metamaskState,
-        currentLocale: action.value.locale,
-      }
+    case actions.SET_CURRENT_LOCALE:
+      return extend(metamaskState, {
+        currentLocale: action.value,
+      })
 
-    case actionConstants.SET_PENDING_TOKENS:
-      return {
-        ...metamaskState,
+    case actions.SET_PENDING_TOKENS:
+      return extend(metamaskState, {
         pendingTokens: { ...action.payload },
-      }
+      })
 
-    case actionConstants.CLEAR_PENDING_TOKENS: {
-      return {
-        ...metamaskState,
+    case actions.CLEAR_PENDING_TOKENS: {
+      return extend(metamaskState, {
         pendingTokens: {},
-      }
+      })
     }
 
-    case actionConstants.UPDATE_PREFERENCES: {
-      return {
-        ...metamaskState,
+    case actions.UPDATE_PREFERENCES: {
+      return extend(metamaskState, {
         preferences: {
           ...metamaskState.preferences,
           ...action.payload,
         },
-      }
+      })
     }
 
-    case actionConstants.COMPLETE_ONBOARDING: {
-      return {
-        ...metamaskState,
+    case actions.COMPLETE_ONBOARDING: {
+      return extend(metamaskState, {
         completedOnboarding: true,
-      }
+      })
     }
 
-    case actionConstants.SET_FIRST_TIME_FLOW_TYPE: {
-      return {
-        ...metamaskState,
+    case actions.COMPLETE_UI_MIGRATION: {
+      return extend(metamaskState, {
+        completedUiMigration: true,
+      })
+    }
+
+    case actions.SET_FIRST_TIME_FLOW_TYPE: {
+      return extend(metamaskState, {
         firstTimeFlowType: action.value,
-      }
-    }
-
-    case actionConstants.SET_NEXT_NONCE: {
-      return {
-        ...metamaskState,
-        nextNonce: action.value,
-      }
+      })
     }
 
     default:
       return metamaskState
+
   }
 }
-
-export const getCurrentLocale = (state) => state.metamask.currentLocale
-
-export const getAlertEnabledness = (state) => state.metamask.alertEnabledness
-
-export const getInvalidCustomNetworkAlertEnabledness = (state) => getAlertEnabledness(state)[ALERT_TYPES.invalidCustomNetwork]
-
-export const getUnconnectedAccountAlertEnabledness = (state) => getAlertEnabledness(state)[ALERT_TYPES.unconnectedAccount]
-
-export const getUnconnectedAccountAlertShown = (state) => state.metamask.unconnectedAccountAlertShownOrigins
-
-export const getTokens = (state) => state.metamask.tokens

@@ -24,6 +24,7 @@
   }
 
   &__custom-symbol {
+
     &__label-wrapper {
       display: flex;
       flex-flow: row nowrap;
@@ -36,7 +37,7 @@
     &__edit {
       flex: 1 1 auto;
       text-align: right;
-      color: $primary-blue;
+      color: $curious-blue;
       padding-right: 4px;
       cursor: pointer;
     }

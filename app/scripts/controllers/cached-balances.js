@@ -1,4 +1,5 @@
-import ObservableStore from 'obs-store'
+const ObservableStore = require('obs-store')
+const extend = require('xtend')
 
 /**
  * @typedef {Object} CachedBalancesOptions
@@ -11,7 +12,7 @@ import ObservableStore from 'obs-store'
  * Background controller responsible for maintaining
  * a cache of account balances in local storage
  */
-export default class CachedBalancesController {
+class CachedBalancesController {
   /**
    * Creates a new controller instance
    *
@@ -23,7 +24,7 @@ export default class CachedBalancesController {
     this.accountTracker = accountTracker
     this.getNetwork = getNetwork
 
-    const initState = Object.assign({
+    const initState = extend({
       cachedBalances: {},
     }, opts.initState)
     this.store = new ObservableStore(initState)
@@ -35,7 +36,7 @@ export default class CachedBalancesController {
    * Updates the cachedBalances property for the current network. Cached balances will be updated to those in the passed accounts
    * if balances in the passed accounts are truthy.
    *
-   * @param {Object} obj - The the recently updated accounts object for the current network
+   * @param {Object} obj The the recently updated accounts object for the current network
    * @returns {Promise<void>}
    */
   async updateCachedBalances ({ accounts }) {
@@ -50,7 +51,7 @@ export default class CachedBalancesController {
     const { cachedBalances } = this.store.getState()
     const currentNetworkBalancesToCache = { ...cachedBalances[currentNetwork] }
 
-    Object.keys(newAccounts).forEach((accountID) => {
+    Object.keys(newAccounts).forEach(accountID => {
       const account = newAccounts[accountID]
 
       if (account.balance) {
@@ -66,14 +67,6 @@ export default class CachedBalancesController {
   }
 
   /**
-   * Removes cachedBalances
-   */
-
-  clearCachedBalances () {
-    this.store.updateState({ cachedBalances: {} })
-  }
-
-  /**
    * Sets up listeners and subscriptions which should trigger an update of cached balances. These updates will
    * happen when the current account changes. Which happens on block updates, as well as on network and account
    * selections.
@@ -86,3 +79,5 @@ export default class CachedBalancesController {
     this.accountTracker.store.subscribe(update)
   }
 }
+
+module.exports = CachedBalancesController

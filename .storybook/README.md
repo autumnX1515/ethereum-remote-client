@@ -1,8 +1,8 @@
 # Storybook
 We're currently using [Storybook](https://storybook.js.org/) as part of our design system. To run Storybook and test some of our UI components, clone the repo and run the following:
 ```
-yarn
-yarn storybook
+npm install
+npm run storybook
 ```
 You should then see:
 > info Storybook started on => http://localhost:6006/

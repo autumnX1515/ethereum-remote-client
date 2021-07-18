@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import MetaFoxLogo from '../../../ui/metafox-logo'
 import PageContainerFooter from '../../../ui/page-container/page-container-footer'
 
 export default class MetaMetricsOptInModal extends Component {
@@ -21,7 +20,19 @@ export default class MetaMetricsOptInModal extends Component {
       <div className="metametrics-opt-in metametrics-opt-in-modal">
         <div className="metametrics-opt-in__main">
           <div className="metametrics-opt-in__content">
-            <MetaFoxLogo />
+            <div className="app-header__logo-container">
+              <img
+                className="app-header__metafox-logo app-header__metafox-logo--horizontal"
+                src="/images/logo/metamask-logo-horizontal.svg"
+                height={30}
+              />
+              <img
+                className="app-header__metafox-logo app-header__metafox-logo--icon"
+                src="/images/logo/metamask-fox.svg"
+                height={42}
+                width={42}
+              />
+            </div>
             <div className="metametrics-opt-in__body-graphic">
               <img src="images/metrics-chart.svg" />
             </div>
@@ -75,8 +86,7 @@ export default class MetaMetricsOptInModal extends Component {
               </div>
             </div>
             <div className="metametrics-opt-in__bottom-text">
-              This data is aggregated and is therefore anonymous for the purposes of General Data Protection Regulation (EU) 2016/679. For more information in relation to our privacy practices, please see our&nbsp;
-              <a
+              This data is aggregated and is therefore anonymous for the purposes of General Data Protection Regulation (EU) 2016/679. For more information in relation to our privacy practices, please see our <a
                 href="https://metamask.io/privacy.html"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -103,7 +113,7 @@ export default class MetaMetricsOptInModal extends Component {
                     hideModal()
                   })
               }}
-              cancelText="No Thanks"
+              cancelText={'No Thanks'}
               hideCancel={false}
               onSubmit={() => {
                 setParticipateInMetaMetrics(true)
@@ -119,8 +129,8 @@ export default class MetaMetricsOptInModal extends Component {
                     hideModal()
                   })
               }}
-              submitText="I agree"
-              submitButtonType="confirm"
+              submitText={'I agree'}
+              submitButtonType={'confirm'}
               disabled={false}
             />
           </div>

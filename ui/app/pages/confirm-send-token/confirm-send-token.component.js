@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import ConfirmTokenTransactionBaseContainer from '../confirm-token-transaction-base'
+import ConfirmTokenTransactionBase from '../confirm-token-transaction-base'
 import { SEND_ROUTE } from '../../helpers/constants/routes'
 
 export default class ConfirmSendToken extends Component {
@@ -20,8 +20,8 @@ export default class ConfirmSendToken extends Component {
     const { tokenAmount } = this.props
 
     return (
-      <ConfirmTokenTransactionBaseContainer
-        onEdit={(confirmTransactionData) => this.handleEdit(confirmTransactionData)}
+      <ConfirmTokenTransactionBase
+        onEdit={confirmTransactionData => this.handleEdit(confirmTransactionData)}
         tokenAmount={tokenAmount}
       />
     )

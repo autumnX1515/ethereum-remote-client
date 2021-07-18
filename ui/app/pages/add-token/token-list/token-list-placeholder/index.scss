@@ -4,7 +4,7 @@
   padding-top: 36px;
   flex-direction: column;
   line-height: 22px;
-  opacity: 0.5;
+  opacity: .5;
 
   &__text {
     color: $silver-chalice;
@@ -18,8 +18,6 @@
   }
 
   &__link {
-    @extend %link;
-
-    margin-top: 0.5rem;
+    color: $curious-blue;
   }
 }

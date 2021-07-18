@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { ASSET_ROUTE, ADD_TOKEN_ROUTE } from '../../helpers/constants/routes'
+import { DEFAULT_ROUTE, ADD_TOKEN_ROUTE } from '../../helpers/constants/routes'
 import Button from '../../components/ui/button'
 import Identicon from '../../components/ui/identicon'
 import TokenBalance from '../../components/ui/token-balance'
@@ -14,15 +14,14 @@ export default class ConfirmAddToken extends Component {
     history: PropTypes.object,
     clearPendingTokens: PropTypes.func,
     addTokens: PropTypes.func,
-    mostRecentOverviewPage: PropTypes.string.isRequired,
     pendingTokens: PropTypes.object,
   }
 
   componentDidMount () {
-    const { mostRecentOverviewPage, pendingTokens = {}, history } = this.props
+    const { pendingTokens = {}, history } = this.props
 
     if (Object.keys(pendingTokens).length === 0) {
-      history.push(mostRecentOverviewPage)
+      history.push(DEFAULT_ROUTE)
     }
   }
 
@@ -33,7 +32,7 @@ export default class ConfirmAddToken extends Component {
   }
 
   render () {
-    const { history, addTokens, clearPendingTokens, mostRecentOverviewPage, pendingTokens } = this.props
+    const { history, addTokens, clearPendingTokens, pendingTokens } = this.props
 
     return (
       <div className="page-container">
@@ -81,13 +80,13 @@ export default class ConfirmAddToken extends Component {
                         </div>
                       </div>
                     )
-                  })
+                })
               }
             </div>
           </div>
         </div>
         <div className="page-container__footer">
-          <footer>
+          <header>
             <Button
               type="default"
               large
@@ -97,25 +96,20 @@ export default class ConfirmAddToken extends Component {
               { this.context.t('back') }
             </Button>
             <Button
-              type="secondary"
+              type="primary"
               large
               className="page-container__footer-button"
               onClick={() => {
                 addTokens(pendingTokens)
                   .then(() => {
                     clearPendingTokens()
-                    const firstTokenAddress = Object.values(pendingTokens)?.[0].address?.toLowerCase()
-                    if (firstTokenAddress) {
-                      history.push(`${ASSET_ROUTE}/${firstTokenAddress}`)
-                    } else {
-                      history.push(mostRecentOverviewPage)
-                    }
+                    history.push(DEFAULT_ROUTE)
                   })
               }}
             >
               { this.context.t('addTokens') }
             </Button>
-          </footer>
+          </header>
         </div>
       </div>
     )

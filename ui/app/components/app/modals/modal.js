@@ -1,34 +1,35 @@
-import PropTypes from 'prop-types'
-import React, { Component } from 'react'
-
-import { connect } from 'react-redux'
-import * as actions from '../../../store/actions'
-import { resetCustomData as resetCustomGasData } from '../../../ducks/gas/gas.duck'
-import isMobileView from '../../../../lib/is-mobile-view'
-import { getEnvironmentType } from '../../../../../app/scripts/lib/util'
-import { ENVIRONMENT_TYPE_POPUP } from '../../../../../app/scripts/lib/enums'
+const Component = require('react').Component
+const h = require('react-hyperscript')
+const inherits = require('util').inherits
+const connect = require('react-redux').connect
+const FadeModal = require('boron').FadeModal
+const actions = require('../../../store/actions')
+const { resetCustomData: resetCustomGasData } = require('../../../ducks/gas/gas.duck')
+const isMobileView = require('../../../../lib/is-mobile-view')
+const { getEnvironmentType } = require('../../../../../app/scripts/lib/util')
+const { ENVIRONMENT_TYPE_POPUP } = require('../../../../../app/scripts/lib/enums')
 
 // Modal Components
-import DepositEtherModal from './deposit-ether-modal'
-import AccountDetailsModal from './account-details-modal'
-import ExportPrivateKeyModal from './export-private-key-modal'
-import HideTokenConfirmationModal from './hide-token-confirmation-modal'
-import NotifcationModal from './notification-modal'
-import QRScanner from './qr-scanner'
+const BuyOptions = require('./buy-options-modal')
+const DepositEtherModal = require('./deposit-ether-modal')
+const AccountDetailsModal = require('./account-details-modal')
+const EditAccountNameModal = require('./edit-account-name-modal')
+const ExportPrivateKeyModal = require('./export-private-key-modal')
+const NewAccountModal = require('./new-account-modal')
+const ShapeshiftDepositTxModal = require('./shapeshift-deposit-tx-modal.js')
+const HideTokenConfirmationModal = require('./hide-token-confirmation-modal')
+const NotifcationModal = require('./notification-modal')
+const QRScanner = require('./qr-scanner')
 
 import ConfirmRemoveAccount from './confirm-remove-account'
 import ConfirmResetAccount from './confirm-reset-account'
 import TransactionConfirmed from './transaction-confirmed'
 import CancelTransaction from './cancel-transaction'
 
-import FadeModal from './fade-modal'
 import MetaMetricsOptInModal from './metametrics-opt-in-modal'
 import RejectTransactions from './reject-transactions'
+import ClearApprovedOrigins from './clear-approved-origins'
 import ConfirmCustomizeGasModal from '../gas-customization/gas-modal-page-container'
-import ConfirmDeleteNetwork from './confirm-delete-network'
-import AddToAddressBookModal from './add-to-addressbook-modal'
-import EditApprovalPermission from './edit-approval-permission'
-import NewAccountModal from './new-account-modal'
 
 const modalContainerBaseStyle = {
   transform: 'translate3d(-50%, 0, 0px)',
@@ -79,8 +80,36 @@ const accountModalStyle = {
 }
 
 const MODALS = {
+  BUY: {
+    contents: [
+      h(BuyOptions, {}, []),
+    ],
+    mobileModalStyle: {
+      width: '95%',
+      // top: isPopupOrNotification() === 'popup' ? '48vh' : '36.5vh',
+      transform: 'none',
+      left: '0',
+      right: '0',
+      margin: '0 auto',
+      boxShadow: '0 0 7px 0 rgba(0,0,0,0.08)',
+      top: '10%',
+    },
+    laptopModalStyle: {
+      width: '66%',
+      maxWidth: '550px',
+      top: 'calc(10% + 10px)',
+      left: '0',
+      right: '0',
+      margin: '0 auto',
+      boxShadow: '0 0 7px 0 rgba(0,0,0,0.08)',
+      transform: 'none',
+    },
+  },
+
   DEPOSIT_ETHER: {
-    contents: <DepositEtherModal />,
+    contents: [
+      h(DepositEtherModal, {}, []),
+    ],
     onHide: (props) => props.hideWarning(),
     mobileModalStyle: {
       width: '100%',
@@ -112,75 +141,60 @@ const MODALS = {
     },
   },
 
-  ADD_TO_ADDRESSBOOK: {
-    contents: <AddToAddressBookModal />,
+  EDIT_ACCOUNT_NAME: {
+    contents: [
+      h(EditAccountNameModal, {}, []),
+    ],
     mobileModalStyle: {
       width: '95%',
+      // top: isPopupOrNotification() === 'popup' ? '48vh' : '36.5vh',
       top: '10%',
       boxShadow: 'rgba(0, 0, 0, 0.15) 0px 2px 2px 2px',
       transform: 'none',
       left: '0',
       right: '0',
       margin: '0 auto',
-      borderRadius: '10px',
     },
     laptopModalStyle: {
       width: '375px',
+      // top: 'calc(30% + 10px)',
       top: '10%',
       boxShadow: 'rgba(0, 0, 0, 0.15) 0px 2px 2px 2px',
       transform: 'none',
       left: '0',
       right: '0',
       margin: '0 auto',
-      borderRadius: '10px',
-    },
-    contentStyle: {
-      borderRadius: '10px',
-    },
-  },
-
-  NEW_ACCOUNT: {
-    contents: <NewAccountModal />,
-    mobileModalStyle: {
-      width: '95%',
-      top: '10%',
-      boxShadow: 'rgba(0, 0, 0, 0.15) 0px 2px 2px 2px',
-      transform: 'none',
-      left: '0',
-      right: '0',
-      margin: '0 auto',
-      borderRadius: '10px',
-    },
-    laptopModalStyle: {
-      width: '375px',
-      top: '10%',
-      boxShadow: 'rgba(0, 0, 0, 0.15) 0px 2px 2px 2px',
-      transform: 'none',
-      left: '0',
-      right: '0',
-      margin: '0 auto',
-      borderRadius: '10px',
-    },
-    contentStyle: {
-      borderRadius: '10px',
     },
   },
 
   ACCOUNT_DETAILS: {
-    contents: <AccountDetailsModal />,
+    contents: [
+      h(AccountDetailsModal, {}, []),
+    ],
     ...accountModalStyle,
   },
 
   EXPORT_PRIVATE_KEY: {
-    contents: <ExportPrivateKeyModal />,
+    contents: [
+      h(ExportPrivateKeyModal, {}, []),
+    ],
+    ...accountModalStyle,
+  },
+
+  SHAPESHIFT_DEPOSIT_TX: {
+    contents: [
+      h(ShapeshiftDepositTxModal),
+    ],
     ...accountModalStyle,
   },
 
   HIDE_TOKEN_CONFIRMATION: {
-    contents: <HideTokenConfirmationModal />,
+    contents: [
+      h(HideTokenConfirmationModal, {}, []),
+    ],
     mobileModalStyle: {
       width: '95%',
-      top: getEnvironmentType() === ENVIRONMENT_TYPE_POPUP ? '52vh' : '36.5vh',
+      top: getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_POPUP ? '52vh' : '36.5vh',
     },
     laptopModalStyle: {
       width: '449px',
@@ -188,8 +202,21 @@ const MODALS = {
     },
   },
 
+  CLEAR_APPROVED_ORIGINS: {
+    contents: h(ClearApprovedOrigins),
+    mobileModalStyle: {
+      ...modalContainerMobileStyle,
+    },
+    laptopModalStyle: {
+      ...modalContainerLaptopStyle,
+    },
+    contentStyle: {
+      borderRadius: '8px',
+    },
+  },
+
   METAMETRICS_OPT_IN_MODAL: {
-    contents: <MetaMetricsOptInModal />,
+    contents: h(MetaMetricsOptInModal),
     mobileModalStyle: {
       ...modalContainerMobileStyle,
       width: '100%',
@@ -205,11 +232,33 @@ const MODALS = {
     },
   },
 
-  GAS_PRICE_INFO_MODAL: {
-    contents: <NotifcationModal header="gasPriceNoDenom" message="gasPriceInfoModalContent" />,
+  OLD_UI_NOTIFICATION_MODAL: {
+    contents: [
+      h(NotifcationModal, {
+        header: 'oldUI',
+        message: 'oldUIMessage',
+      }),
+    ],
     mobileModalStyle: {
       width: '95%',
-      top: getEnvironmentType() === ENVIRONMENT_TYPE_POPUP ? '52vh' : '36.5vh',
+      top: getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_POPUP ? '52vh' : '36.5vh',
+    },
+    laptopModalStyle: {
+      width: '449px',
+      top: 'calc(33% + 45px)',
+    },
+  },
+
+  GAS_PRICE_INFO_MODAL: {
+    contents: [
+      h(NotifcationModal, {
+        header: 'gasPriceNoDenom',
+        message: 'gasPriceInfoModalContent',
+      }),
+    ],
+    mobileModalStyle: {
+      width: '95%',
+      top: getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_POPUP ? '52vh' : '36.5vh',
     },
     laptopModalStyle: {
       width: '449px',
@@ -218,10 +267,15 @@ const MODALS = {
   },
 
   GAS_LIMIT_INFO_MODAL: {
-    contents: <NotifcationModal header="gasLimit" message="gasLimitInfoModalContent" />,
+    contents: [
+      h(NotifcationModal, {
+        header: 'gasLimit',
+        message: 'gasLimitInfoModalContent',
+      }),
+    ],
     mobileModalStyle: {
       width: '95%',
-      top: getEnvironmentType() === ENVIRONMENT_TYPE_POPUP ? '52vh' : '36.5vh',
+      top: getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_POPUP ? '52vh' : '36.5vh',
     },
     laptopModalStyle: {
       width: '449px',
@@ -230,7 +284,7 @@ const MODALS = {
   },
 
   CONFIRM_RESET_ACCOUNT: {
-    contents: <ConfirmResetAccount />,
+    contents: h(ConfirmResetAccount),
     mobileModalStyle: {
       ...modalContainerMobileStyle,
     },
@@ -243,7 +297,7 @@ const MODALS = {
   },
 
   CONFIRM_REMOVE_ACCOUNT: {
-    contents: <ConfirmRemoveAccount />,
+    contents: h(ConfirmRemoveAccount),
     mobileModalStyle: {
       ...modalContainerMobileStyle,
     },
@@ -255,21 +309,34 @@ const MODALS = {
     },
   },
 
-  CONFIRM_DELETE_NETWORK: {
-    contents: <ConfirmDeleteNetwork />,
+  NEW_ACCOUNT: {
+    contents: [
+      h(NewAccountModal, {}, []),
+    ],
     mobileModalStyle: {
-      ...modalContainerMobileStyle,
+      width: '95%',
+      // top: isPopupOrNotification() === 'popup' ? '52vh' : '36.5vh',
+      top: '10%',
+      transform: 'none',
+      left: '0',
+      right: '0',
+      margin: '0 auto',
     },
     laptopModalStyle: {
-      ...modalContainerLaptopStyle,
-    },
-    contentStyle: {
-      borderRadius: '8px',
+      width: '449px',
+      // top: 'calc(33% + 45px)',
+      top: '10%',
+      transform: 'none',
+      left: '0',
+      right: '0',
+      margin: '0 auto',
     },
   },
 
   CUSTOMIZE_GAS: {
-    contents: <ConfirmCustomizeGasModal />,
+    contents: [
+      h(ConfirmCustomizeGasModal),
+    ],
     mobileModalStyle: {
       width: '100vw',
       height: '100vh',
@@ -297,34 +364,9 @@ const MODALS = {
     },
   },
 
-  EDIT_APPROVAL_PERMISSION: {
-    contents: <EditApprovalPermission />,
-    mobileModalStyle: {
-      width: '95vw',
-      height: '100vh',
-      top: '50px',
-      transform: 'none',
-      left: '0',
-      right: '0',
-      margin: '0 auto',
-    },
-    laptopModalStyle: {
-      width: 'auto',
-      height: '0px',
-      top: '80px',
-      left: '0px',
-      transform: 'none',
-      margin: '0 auto',
-      position: 'relative',
-    },
-    contentStyle: {
-      borderRadius: '8px',
-    },
-  },
-
   TRANSACTION_CONFIRMED: {
     disableBackdropClick: true,
-    contents: <TransactionConfirmed />,
+    contents: h(TransactionConfirmed),
     mobileModalStyle: {
       ...modalContainerMobileStyle,
     },
@@ -337,7 +379,7 @@ const MODALS = {
   },
 
   QR_SCANNER: {
-    contents: <QRScanner />,
+    contents: h(QRScanner),
     mobileModalStyle: {
       ...modalContainerMobileStyle,
     },
@@ -350,7 +392,7 @@ const MODALS = {
   },
 
   CANCEL_TRANSACTION: {
-    contents: <CancelTransaction />,
+    contents: h(CancelTransaction),
     mobileModalStyle: {
       ...modalContainerMobileStyle,
     },
@@ -363,7 +405,7 @@ const MODALS = {
   },
 
   REJECT_TRANSACTIONS: {
-    contents: <RejectTransactions />,
+    contents: h(RejectTransactions),
     mobileModalStyle: {
       ...modalContainerMobileStyle,
     },
@@ -408,67 +450,62 @@ function mapDispatchToProps (dispatch) {
   }
 }
 
-class Modal extends Component {
-  static propTypes = {
-    active: PropTypes.bool.isRequired,
-    hideModal: PropTypes.func.isRequired,
-    hideWarning: PropTypes.func.isRequired,
-    modalState: PropTypes.object.isRequired,
-  }
+// Global Modal Component
+inherits(Modal, Component)
+function Modal () {
+  Component.call(this)
+}
 
-  hide () {
-    if (this.modalRef) {
-      this.modalRef.hide()
-    }
-  }
+module.exports = connect(mapStateToProps, mapDispatchToProps)(Modal)
 
-  show () {
-    if (this.modalRef) {
-      this.modalRef.show()
-    }
-  }
+Modal.prototype.render = function () {
+  const modal = MODALS[this.props.modalState.name || 'DEFAULT']
 
-  UNSAFE_componentWillReceiveProps (nextProps, _) {
-    if (nextProps.active) {
-      this.show()
-    } else if (this.props.active) {
-      this.hide()
-    }
-  }
+  const { contents: children, disableBackdropClick = false } = modal
+  const modalStyle = modal[isMobileView() ? 'mobileModalStyle' : 'laptopModalStyle']
+  const contentStyle = modal.contentStyle || {}
 
-  render () {
-    const modal = MODALS[this.props.modalState.name || 'DEFAULT']
-    const { contents: children, disableBackdropClick = false } = modal
-    const modalStyle = modal[isMobileView() ? 'mobileModalStyle' : 'laptopModalStyle']
-    const contentStyle = modal.contentStyle || {}
+  return h(FadeModal,
+    {
+      className: 'modal',
+      keyboard: false,
+      onHide: () => {
+        if (modal.onHide) {
+          modal.onHide(this.props)
+        }
+        this.onHide(modal.customOnHideOpts)
+      },
+      ref: (ref) => {
+        this.modalRef = ref
+      },
+      modalStyle,
+      contentStyle,
+      backdropStyle: BACKDROPSTYLE,
+      closeOnClick: !disableBackdropClick,
+    },
+    children,
+  )
+}
 
-    if (this.props.modalState.name === 'METAMETRICS_OPT_IN_MODAL') {
-      return null
-    }
-
-    return (
-      <FadeModal
-        keyboard={false}
-        onHide={() => {
-          if (modal.onHide) {
-            modal.onHide({
-              hideWarning: this.props.hideWarning,
-            })
-          }
-          this.props.hideModal(modal.customOnHideOpts)
-        }}
-        ref={(ref) => {
-          this.modalRef = ref
-        }}
-        modalStyle={modalStyle}
-        contentStyle={contentStyle}
-        backdropStyle={BACKDROPSTYLE}
-        closeOnClick={!disableBackdropClick}
-      >
-        {children}
-      </FadeModal>
-    )
+Modal.prototype.componentWillReceiveProps = function (nextProps) {
+  if (nextProps.active) {
+    this.show()
+  } else if (this.props.active) {
+    this.hide()
   }
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Modal)
+Modal.prototype.onHide = function (customOnHideOpts) {
+  if (this.props.onHideCallback) {
+    this.props.onHideCallback()
+  }
+  this.props.hideModal(customOnHideOpts)
+}
+
+Modal.prototype.hide = function () {
+  this.modalRef.hide()
+}
+
+Modal.prototype.show = function () {
+  this.modalRef.show()
+}

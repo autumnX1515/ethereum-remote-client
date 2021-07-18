@@ -45,10 +45,6 @@ export default class LoadingNetworkScreen extends PureComponent {
       name = this.context.t('connectingToKovan')
     } else if (providerName === 'rinkeby') {
       name = this.context.t('connectingToRinkeby')
-    } else if (providerName === 'localhost') {
-      name = this.context.t('connectingToLocalhost')
-    } else if (providerName === 'goerli') {
-      name = this.context.t('connectingToGoerli')
     } else {
       name = this.context.t('connectingTo', [providerId])
     }
@@ -61,46 +57,42 @@ export default class LoadingNetworkScreen extends PureComponent {
   }
 
   renderLoadingScreenContent = () => {
-    return (
-      <div className="loading-overlay__screen-content">
-        <Spinner color="#F7C06C" />
-        {this.renderMessage()}
-      </div>
-    )
+    return <div className="loading-overlay__screen-content">
+      <Spinner color="#F7C06C" />
+      {this.renderMessage()}
+    </div>
   }
 
   renderErrorScreenContent = () => {
     const { showNetworkDropdown, setProviderArgs, setProviderType } = this.props
 
-    return (
-      <div className="loading-overlay__error-screen">
-        <span className="loading-overlay__emoji">&#128542;</span>
-        <span>{ this.context.t('somethingWentWrong') }</span>
-        <div className="loading-overlay__error-buttons">
-          <Button
-            type="default"
-            onClick={() => {
-              window.clearTimeout(this.cancelCallTimeout)
-              showNetworkDropdown()
-            }}
-          >
-            { this.context.t('switchNetworks') }
-          </Button>
+    return <div className="loading-overlay__error-screen">
+      <span className="loading-overlay__emoji">&#128542;</span>
+      <span>{ this.context.t('somethingWentWrong') }</span>
+      <div className="loading-overlay__error-buttons">
+        <Button
+          type="default"
+          onClick={() => {
+            window.clearTimeout(this.cancelCallTimeout)
+            showNetworkDropdown()
+          }}
+        >
+          { this.context.t('switchNetworks') }
+        </Button>
 
-          <Button
-            type="primary"
-            onClick={() => {
-              this.setState({ showErrorScreen: false })
-              setProviderType(...setProviderArgs)
-              window.clearTimeout(this.cancelCallTimeout)
-              this.cancelCallTimeout = setTimeout(this.cancelCall, this.props.cancelTime || 15000)
-            }}
-          >
-            { this.context.t('tryAgain') }
-          </Button>
-        </div>
+        <Button
+          type="primary"
+          onClick={() => {
+            this.setState({ showErrorScreen: false })
+            setProviderType(...setProviderArgs)
+            window.clearTimeout(this.cancelCallTimeout)
+            this.cancelCallTimeout = setTimeout(this.cancelCall, this.props.cancelTime || 15000)
+          }}
+        >
+          { this.context.t('tryAgain') }
+        </Button>
       </div>
-    )
+    </div>
   }
 
   cancelCall = () => {

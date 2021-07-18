@@ -15,25 +15,43 @@ export default class TransactionAction extends PureComponent {
     methodData: PropTypes.object,
   }
 
-  getTransactionAction () {
+  state = {
+    transactionAction: '',
+  }
+
+  componentDidMount () {
+    this.getTransactionAction()
+  }
+
+  componentDidUpdate () {
+    this.getTransactionAction()
+  }
+
+  async getTransactionAction () {
+    const { transactionAction } = this.state
     const { transaction, methodData } = this.props
-    const { name } = methodData
+    const { data, done } = methodData
+    const { name = '' } = data
 
-    const actionKey = getTransactionActionKey(transaction)
-    const action = actionKey && this.context.t(actionKey)
-    const methodName = name && camelCaseToCapitalize(name)
+    if (!done || transactionAction) {
+      return
+    }
 
-    return methodName || action || ''
+    const actionKey = await getTransactionActionKey(transaction, data)
+    const action = actionKey
+      ? this.context.t(actionKey)
+      : camelCaseToCapitalize(name)
+
+    this.setState({ transactionAction: action })
   }
 
   render () {
-    const { className } = this.props
-
-    const action = this.getTransactionAction()
+    const { className, methodData: { done } } = this.props
+    const { transactionAction } = this.state
 
     return (
-      <div className={classnames('transaction-action', className)} title={action}>
-        { action }
+      <div className={classnames('transaction-action', className)}>
+        { (done && transactionAction) || '--' }
       </div>
     )
   }

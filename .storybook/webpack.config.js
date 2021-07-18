@@ -1,22 +1,23 @@
 const path = require('path')
 
-const CopyWebpackPlugin = require('copy-webpack-plugin')
-
 module.exports = {
   module: {
-    strictExportPresence: true,
     rules: [
+      {
+        test: /\.(woff(2)?|ttf|eot|svg|otf)(\?v=\d+\.\d+\.\d+)?$/,
+        loaders: [{
+          loader: 'file-loader',
+          options: {
+            name: '[name].[ext]',
+            outputPath: 'fonts/',
+          },
+        }],
+      },
       {
         test: /\.scss$/,
         loaders: [
           'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              import: false,
-              url: false,
-            },
-          },
+          'css-loader',
           'resolve-url-loader',
           {
             loader: 'sass-loader',
@@ -28,12 +29,9 @@ module.exports = {
       },
     ],
   },
-  plugins: [
-    new CopyWebpackPlugin([
-      {
-        from: path.join('node_modules', '@fortawesome', 'fontawesome-free', 'webfonts'),
-        to: path.join('fonts', 'fontawesome'),
-      },
-    ]),
-  ],
+  resolve: {
+    alias: {
+      './fonts/Font_Awesome': path.resolve(__dirname, '../fonts/Font_Awesome'),
+    },
+  },
 }

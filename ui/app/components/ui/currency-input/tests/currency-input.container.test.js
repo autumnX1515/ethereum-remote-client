@@ -5,7 +5,7 @@ let mapStateToProps, mergeProps
 
 proxyquire('../currency-input.container.js', {
   'react-redux': {
-    connect: (ms, _, mp) => {
+    connect: (ms, md, mp) => {
       mapStateToProps = ms
       mergeProps = mp
       return () => ({})
@@ -13,8 +13,8 @@ proxyquire('../currency-input.container.js', {
   },
 })
 
-describe('CurrencyInput container', function () {
-  describe('mapStateToProps()', function () {
+describe('CurrencyInput container', () => {
+  describe('mapStateToProps()', () => {
     const tests = [
       // Test # 1
       {
@@ -30,9 +30,6 @@ describe('CurrencyInput container', function () {
             provider: {
               type: 'mainnet',
             },
-            send: {
-              maxModeOn: false,
-            },
           },
         },
         expected: {
@@ -40,7 +37,6 @@ describe('CurrencyInput container', function () {
           currentCurrency: 'usd',
           nativeCurrency: 'ETH',
           hideFiat: false,
-          maxModeOn: false,
         },
       },
       // Test # 2
@@ -57,9 +53,6 @@ describe('CurrencyInput container', function () {
             provider: {
               type: 'rinkeby',
             },
-            send: {
-              maxModeOn: false,
-            },
           },
         },
         expected: {
@@ -67,7 +60,6 @@ describe('CurrencyInput container', function () {
           currentCurrency: 'usd',
           nativeCurrency: 'ETH',
           hideFiat: true,
-          maxModeOn: false,
         },
       },
       // Test # 3
@@ -84,9 +76,6 @@ describe('CurrencyInput container', function () {
             provider: {
               type: 'rinkeby',
             },
-            send: {
-              maxModeOn: false,
-            },
           },
         },
         expected: {
@@ -94,7 +83,6 @@ describe('CurrencyInput container', function () {
           currentCurrency: 'usd',
           nativeCurrency: 'ETH',
           hideFiat: false,
-          maxModeOn: false,
         },
       },
       // Test # 4
@@ -111,9 +99,6 @@ describe('CurrencyInput container', function () {
             provider: {
               type: 'mainnet',
             },
-            send: {
-              maxModeOn: false,
-            },
           },
         },
         expected: {
@@ -121,19 +106,16 @@ describe('CurrencyInput container', function () {
           currentCurrency: 'usd',
           nativeCurrency: 'ETH',
           hideFiat: false,
-          maxModeOn: false,
         },
       },
     ]
 
     tests.forEach(({ mockState, expected, comment }) => {
-      it(comment, function () {
-        return assert.deepEqual(mapStateToProps(mockState), expected)
-      })
+      it(comment, () => assert.deepEqual(mapStateToProps(mockState), expected))
     })
   })
 
-  describe('mergeProps()', function () {
+  describe('mergeProps()', () => {
     const tests = [
       // Test # 1
       {
@@ -180,7 +162,7 @@ describe('CurrencyInput container', function () {
     ]
 
     tests.forEach(({ mock: { stateProps, dispatchProps, ownProps }, expected, comment }) => {
-      it(comment, function () {
+      it(comment, () => {
         assert.deepEqual(mergeProps(stateProps, dispatchProps, ownProps), expected)
       })
     })

@@ -31,7 +31,7 @@ txMeta = {
   "time": 1524094064821, // time of creation
   "status": "confirmed",
   "metamaskNetworkId": "1524091532133", //the network id for the transaction
-  "loadingDefaults": false, // used to tell the ui when we are done calculating gas defaults
+  "loadingDefaults": false, // used to tell the ui when we are done calculatyig gass defaults
   "txParams": { // the txParams object
     "from": "0x8acce2391c0d510a6c5e5d8f819a678f79b7e675",
     "to": "0x8acce2391c0d510a6c5e5d8f819a678f79b7e675",
@@ -40,25 +40,28 @@ txMeta = {
     "gas": "0x7b0c",
     "nonce": "0x0"
   },
-  "history": [
-    { // debug information
-      "id": 2828415030114568,
-      "time": 1524094064821,
-      "status": "unapproved",
-      "metamaskNetworkId": "1524091532133",
-      "loadingDefaults": true,
-      "txParams": {
-        "from": "0x8acce2391c0d510a6c5e5d8f819a678f79b7e675",
-        "to": "0x8acce2391c0d510a6c5e5d8f819a678f79b7e675",
-        "value": "0x0"
-      }
-    },
-    [{
-      "op": "add",
-      "path": "/txParams/gasPrice",
-      "value": "0x3b9aca00"
-    }]
-  ], // I've removed most of history for this
+  "history": [{ //debug
+            "id": 2828415030114568,
+            "time": 1524094064821,
+            "status": "unapproved",
+            "metamaskNetworkId": "1524091532133",
+            "loadingDefaults": true,
+            "txParams": {
+              "from": "0x8acce2391c0d510a6c5e5d8f819a678f79b7e675",
+              "to": "0x8acce2391c0d510a6c5e5d8f819a678f79b7e675",
+              "value": "0x0"
+            }
+          },
+          [
+            {
+              "op": "add",
+              "path": "/txParams/gasPrice",
+              "value": "0x3b9aca00"
+            },
+            ...], // I've removed most of history for this
+  "gasPriceSpecified": false, //whether or not the user/dapp has specified gasPrice
+  "gasLimitSpecified": false, //whether or not the user/dapp has specified gas
+  "estimatedGas": "5208",
   "origin": "MetaMask", //debug
   "nonceDetails": {
     "params": {

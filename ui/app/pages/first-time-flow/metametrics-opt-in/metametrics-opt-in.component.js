@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import MetaFoxLogo from '../../../components/ui/metafox-logo'
 import PageContainerFooter from '../../../components/ui/page-container/page-container-footer'
 
 export default class MetaMetricsOptIn extends Component {
@@ -14,11 +13,10 @@ export default class MetaMetricsOptIn extends Component {
 
   static contextTypes = {
     metricsEvent: PropTypes.func,
-    t: PropTypes.func,
   }
 
   render () {
-    const { metricsEvent, t } = this.context
+    const { metricsEvent } = this.context
     const {
       nextRoute,
       history,
@@ -30,7 +28,19 @@ export default class MetaMetricsOptIn extends Component {
     return (
       <div className="metametrics-opt-in">
         <div className="metametrics-opt-in__main">
-          <MetaFoxLogo />
+          <div className="app-header__logo-container">
+            <img
+              className="app-header__metafox-logo app-header__metafox-logo--horizontal"
+              src="/images/logo/metamask-logo-horizontal.svg"
+              height={30}
+            />
+            <img
+              className="app-header__metafox-logo app-header__metafox-logo--icon"
+              src="/images/logo/metamask-fox.svg"
+              height={42}
+              width={42}
+            />
+          </div>
           <div className="metametrics-opt-in__body-graphic">
             <img src="images/metrics-chart.svg" />
           </div>
@@ -103,13 +113,13 @@ export default class MetaMetricsOptIn extends Component {
                       .then(() => {
                         history.push(nextRoute)
                       })
-                  })
+                })
               }}
-              cancelText="No Thanks"
+              cancelText={'No Thanks'}
               hideCancel={false}
               onSubmit={() => {
                 setParticipateInMetaMetrics(true)
-                  .then(([_, metaMetricsId]) => {
+                  .then(([participateStatus, metaMetricsId]) => {
                     const promise = participateInMetaMetrics !== true
                       ? metricsEvent({
                         eventOpts: {
@@ -136,22 +146,20 @@ export default class MetaMetricsOptIn extends Component {
                       .then(() => {
                         history.push(nextRoute)
                       })
-                  })
+                })
               }}
-              submitText="I agree"
-              submitButtonType="primary"
+              submitText={'I agree'}
+              submitButtonType={'confirm'}
               disabled={false}
             />
             <div className="metametrics-opt-in__bottom-text">
-              { t('gdprMessage', [
-                <a
-                  key="metametrics-bottom-text-wrapper"
-                  href="https://metamask.io/privacy.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >{ t('gdprMessagePrivacyPolicy') }
-                </a> ])
-              }
+              This data is aggregated and is therefore anonymous for the purposes of General Data Protection Regulation (EU) 2016/679. For more information in relation to our privacy practices, please see our <a
+                href="https://metamask.io/privacy.html"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Privacy Policy here
+              </a>.
             </div>
           </div>
         </div>

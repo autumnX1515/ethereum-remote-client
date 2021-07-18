@@ -2,9 +2,9 @@ import React from 'react'
 import assert from 'assert'
 import shallow from '../../../../../../../lib/shallow-with-context'
 import BasicTabContent from '../basic-tab-content.component'
+
 import GasPriceButtonGroup from '../../../gas-price-button-group'
 import Loading from '../../../../../ui/loading-screen'
-import { GAS_ESTIMATE_TYPES } from '../../../../../../helpers/constants/common'
 
 const mockGasPriceButtonGroupProps = {
   buttonDataLoading: false,
@@ -15,49 +15,44 @@ const mockGasPriceButtonGroupProps = {
       feeInSecondaryCurrency: '0.0048 ETH',
       timeEstimate: '~ 1 min 0 sec',
       priceInHexWei: '0xa1b2c3f',
-      gasEstimateType: GAS_ESTIMATE_TYPES.AVERAGE,
     },
     {
       feeInPrimaryCurrency: '$0.39',
       feeInSecondaryCurrency: '0.004 ETH',
       timeEstimate: '~ 1 min 30 sec',
       priceInHexWei: '0xa1b2c39',
-      gasEstimateType: GAS_ESTIMATE_TYPES.AVERAGE,
     },
     {
       feeInPrimaryCurrency: '$0.30',
       feeInSecondaryCurrency: '0.00354 ETH',
       timeEstimate: '~ 2 min 1 sec',
       priceInHexWei: '0xa1b2c30',
-      gasEstimateType: GAS_ESTIMATE_TYPES.AVERAGE,
     },
   ],
-  handleGasPriceSelection: (newPrice) => console.log('NewPrice: ', newPrice),
+  handleGasPriceSelection: newPrice => console.log('NewPrice: ', newPrice),
   noButtonActiveByDefault: true,
   showCheck: true,
 }
 
 describe('BasicTabContent Component', function () {
-  describe('render', function () {
-    let wrapper
+  let wrapper
 
-    beforeEach(function () {
-      wrapper = shallow((
-        <BasicTabContent
-          gasPriceButtonGroupProps={mockGasPriceButtonGroupProps}
-        />
-      ))
-    })
+  beforeEach(() => {
+    wrapper = shallow(<BasicTabContent
+      gasPriceButtonGroupProps={mockGasPriceButtonGroupProps}
+    />)
+  })
 
-    it('should have a title', function () {
+  describe('render', () => {
+    it('should have a title', () => {
       assert(wrapper.find('.basic-tab-content').childAt(0).hasClass('basic-tab-content__title'))
     })
 
-    it('should render a GasPriceButtonGroup compenent', function () {
+    it('should render a GasPriceButtonGroup compenent', () => {
       assert.equal(wrapper.find(GasPriceButtonGroup).length, 1)
     })
 
-    it('should pass correct props to GasPriceButtonGroup', function () {
+    it('should pass correct props to GasPriceButtonGroup', () => {
       const {
         buttonDataLoading,
         className,
@@ -75,7 +70,7 @@ describe('BasicTabContent Component', function () {
       assert.equal(JSON.stringify(handleGasPriceSelection), JSON.stringify(mockGasPriceButtonGroupProps.handleGasPriceSelection))
     })
 
-    it('should render a loading component instead of the GasPriceButtonGroup if gasPriceButtonGroupProps.loading is true', function () {
+    it('should render a loading component instead of the GasPriceButtonGroup if gasPriceButtonGroupProps.loading is true', () => {
       wrapper.setProps({
         gasPriceButtonGroupProps: { ...mockGasPriceButtonGroupProps, loading: true },
       })

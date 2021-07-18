@@ -1,7 +1,7 @@
-import assert from 'assert'
-import getBuyEthUrl from '../../../app/scripts/lib/buy-eth-url'
+const assert = require('assert')
+const getBuyEthUrl = require('../../../app/scripts/lib/buy-eth-url')
 
-describe('buy-eth-url', function () {
+describe('', function () {
   const mainnet = {
     network: '1',
     amount: 5,
@@ -16,9 +16,12 @@ describe('buy-eth-url', function () {
   const kovan = {
     network: '42',
   }
-  it('returns wyre url with address for network 1', function () {
+
+  it('returns coinbase url with amount and address for network 1', function () {
     const wyreUrl = getBuyEthUrl(mainnet)
-    assert.equal(wyreUrl, `https://pay.testwyre.com/?dest=ethereum:${mainnet.address}&destCurrency=ETH&accountId=AC_4NX7HJH3GNX&paymentMethod=debit-card`)
+
+    assert.equal(wyreUrl, 'https://dash.sendwyre.com/sign-up')
+
   })
 
   it('returns metamask ropsten faucet for network 3', function () {
@@ -37,3 +40,4 @@ describe('buy-eth-url', function () {
   })
 
 })
+

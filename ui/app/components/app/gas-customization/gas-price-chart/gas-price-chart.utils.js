@@ -1,12 +1,11 @@
 import * as d3 from 'd3'
 import c3 from 'c3'
-import {
-  extrapolateY,
-  getAdjacentGasPrices,
-  newBigSigDig,
-  bigNumMinus,
-  bigNumDiv,
-} from '../../../../helpers/utils/gas-time-estimates.util'
+import BigNumber from 'bignumber.js'
+
+const newBigSigDig = n => (new BigNumber(n.toPrecision(15)))
+const createOp = (a, b, op) => (newBigSigDig(a))[op](newBigSigDig(b))
+const bigNumMinus = (a = 0, b = 0) => createOp(a, b, 'minus')
+const bigNumDiv = (a = 0, b = 1) => createOp(a, b, 'div')
 
 export function handleMouseMove ({ xMousePos, chartXStart, chartWidth, gasPrices, estimatedTimes, chart }) {
   const { currentPosValue, newTimeEstimate } = getNewXandTimeEstimate({
@@ -67,6 +66,25 @@ export function handleChartUpdate ({ chart, gasPrices, newPrice, cssId }) {
   }
 }
 
+export function getAdjacentGasPrices ({ gasPrices, priceToPosition }) {
+  const closestLowerValueIndex = gasPrices.findIndex((e, i, a) => e <= priceToPosition && a[i + 1] >= priceToPosition)
+  const closestHigherValueIndex = gasPrices.findIndex((e, i, a) => e > priceToPosition)
+  return {
+    closestLowerValueIndex,
+    closestHigherValueIndex,
+    closestHigherValue: gasPrices[closestHigherValueIndex],
+    closestLowerValue: gasPrices[closestLowerValueIndex],
+  }
+}
+
+export function extrapolateY ({ higherY = 0, lowerY = 0, higherX = 0, lowerX = 0, xForExtrapolation = 0 }) {
+  const slope = bigNumMinus(higherY, lowerY).div(bigNumMinus(higherX, lowerX))
+  const newTimeEstimate = slope.times(bigNumMinus(higherX, xForExtrapolation)).minus(newBigSigDig(higherY)).negated()
+
+  return newTimeEstimate.toNumber()
+}
+
+
 export function getNewXandTimeEstimate ({ xMousePos, chartXStart, chartWidth, gasPrices, estimatedTimes }) {
   const chartMouseXPos = bigNumMinus(xMousePos, chartXStart)
   const posPercentile = bigNumDiv(chartMouseXPos, chartWidth)
@@ -115,7 +133,7 @@ export function setTickPosition (axis, n, newPosition, secondNewPosition) {
   d3.select('#chart')
     .select(`.c3-axis-${axis}`)
     .selectAll('.tick')
-    .filter((_, i) => i === n)
+    .filter((d, i) => i === n)
     .select('text')
     .attr(positionToShift, 0)
     .select('tspan')
@@ -176,7 +194,7 @@ export function setSelectedCircle ({
 
   chart.internal.selectPoint(
     generateDataUIObj(currentX.toNumber(), numberOfValues, newTimeEstimate),
-    numberOfValues,
+    numberOfValues
   )
 }
 
@@ -190,19 +208,19 @@ export function generateChart (gasPrices, estimatedTimes, gasPricesMax, estimate
     transition: {
       duration: 0,
     },
-    padding: { left: 20, right: 15, top: 6, bottom: 10 },
+    padding: {left: 20, right: 15, top: 6, bottom: 10},
     data: {
-      x: 'x',
-      columns: [
-        ['x', ...gasPrices],
-        ['data1', ...estimatedTimes],
-      ],
-      types: {
-        data1: 'area',
-      },
-      selection: {
-        enabled: false,
-      },
+        x: 'x',
+        columns: [
+            ['x', ...gasPrices],
+            ['data1', ...estimatedTimes],
+        ],
+        types: {
+          data1: 'area',
+        },
+        selection: {
+          enabled: false,
+        },
     },
     color: {
       data1: '#259de5',
@@ -214,18 +232,16 @@ export function generateChart (gasPrices, estimatedTimes, gasPricesMax, estimate
         tick: {
           values: [Math.floor(gasPrices[0]), Math.ceil(gasPricesMax)],
           outer: false,
-          format: function (val) {
-            return val + ' GWEI'
-          },
+          format: function (val) { return val + ' GWEI' },
         },
-        padding: { left: gasPricesMax / 50, right: gasPricesMax / 50 },
+        padding: {left: gasPricesMax / 50, right: gasPricesMax / 50},
         label: {
           text: 'Gas Price ($)',
           position: 'outer-center',
         },
       },
       y: {
-        padding: { top: 7, bottom: 7 },
+        padding: {top: 7, bottom: 7},
         tick: {
           values: [Math.floor(estimatedTimesMax * 0.05), Math.ceil(estimatedTimesMax * 0.97)],
           outer: false,
@@ -238,13 +254,13 @@ export function generateChart (gasPrices, estimatedTimes, gasPricesMax, estimate
       },
     },
     legend: {
-      show: false,
+        show: false,
     },
     grid: {
-      x: {},
-      lines: {
-        front: false,
-      },
+        x: {},
+        lines: {
+          front: false,
+        },
     },
     point: {
       focus: {
@@ -261,14 +277,14 @@ export function generateChart (gasPrices, estimatedTimes, gasPricesMax, estimate
       contents: function (d) {
         const titleFormat = this.config.tooltip_format_title
         let text
-        d.forEach((el) => {
+        d.forEach(el => {
           if (el && (el.value || el.value === 0) && !text) {
             text = "<table class='" + 'custom-tooltip' + "'>" + "<tr><th colspan='2'>" + titleFormat(el.x) + '</th></tr>'
           }
         })
         return text + '</table>' + "<div class='tooltip-arrow'></div>"
       },
-      position: function () {
+      position: function (data) {
         if (d3.select('#overlayed-circle').empty()) {
           return { top: -100, left: -100 }
         }
@@ -280,8 +296,8 @@ export function generateChart (gasPrices, estimatedTimes, gasPricesMax, estimate
         const flipTooltip = circleY - circleWidth < chartYStart + 5
 
         d3
-          .select('.tooltip-arrow')
-          .style('margin-top', flipTooltip ? '-16px' : '4px')
+        .select('.tooltip-arrow')
+        .style('margin-top', flipTooltip ? '-16px' : '4px')
 
         return {
           top: bigNumMinus(circleY, chartYStart).minus(19).plus(flipTooltip ? circleWidth + 38 : 0).toNumber(),
@@ -322,7 +338,7 @@ export function generateChart (gasPrices, estimatedTimes, gasPricesMax, estimate
 
     if (dataToShow.length) {
       this.tooltip.html(
-        this.config.tooltip_contents.call(this, selectedData, this.axis.getXAxisTickFormat(), this.getYFormat(), this.color),
+        this.config.tooltip_contents.call(this, selectedData, this.axis.getXAxisTickFormat(), this.getYFormat(), this.color)
       ).style('display', 'flex')
 
       // Get tooltip dimensions

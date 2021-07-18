@@ -1,6 +1,8 @@
-import { snapshotFromTxMeta } from '../../app/scripts/controllers/transactions/lib/tx-state-history-helpers'
+const txStateHistoryHelper = require('../../app/scripts/controllers/transactions/lib/tx-state-history-helper')
 
-export default function createTxMeta (partialMeta) {
+module.exports = createTxMeta
+
+function createTxMeta (partialMeta) {
   const txMeta = Object.assign({
     status: 'unapproved',
     txParams: {},
@@ -8,7 +10,7 @@ export default function createTxMeta (partialMeta) {
   // initialize history
   txMeta.history = []
   // capture initial snapshot of txMeta for history
-  const snapshot = snapshotFromTxMeta(txMeta)
+  const snapshot = txStateHistoryHelper.snapshotFromTxMeta(txMeta)
   txMeta.history.push(snapshot)
   return txMeta
 }

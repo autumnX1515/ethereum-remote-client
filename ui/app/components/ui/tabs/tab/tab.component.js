@@ -2,29 +2,16 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classnames from 'classnames'
 
-const Tab = (props) => {
-  const {
-    activeClassName,
-    className,
-    'data-testid': dataTestId,
-    isActive,
-    name,
-    onClick,
-    tabIndex,
-  } = props
+const Tab = props => {
+  const { name, onClick, isActive, tabIndex, className, activeClassName } = props
 
   return (
     <li
       className={classnames(
-        'tab',
         className,
-        {
-          'tab--active': isActive,
-          [activeClassName]: isActive,
-        },
+        { [activeClassName]: isActive },
       )}
-      data-testid={dataTestId}
-      onClick={(event) => {
+      onClick={event => {
         event.preventDefault()
         onClick(tabIndex)
       }}
@@ -35,19 +22,17 @@ const Tab = (props) => {
 }
 
 Tab.propTypes = {
-  activeClassName: PropTypes.string,
-  className: PropTypes.string,
-  'data-testid': PropTypes.string,
-  isActive: PropTypes.bool, // required, but added using React.cloneElement
   name: PropTypes.string.isRequired,
   onClick: PropTypes.func,
-  tabIndex: PropTypes.number, // required, but added using React.cloneElement
+  isActive: PropTypes.bool,
+  tabIndex: PropTypes.number,
+  className: PropTypes.string,
+  activeClassName: PropTypes.string,
 }
 
 Tab.defaultProps = {
-  activeClassName: undefined,
-  className: undefined,
-  onClick: undefined,
+  className: 'tab',
+  activeClassName: 'tab--active',
 }
 
 export default Tab

@@ -1,7 +1,8 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import validUrl from 'valid-url'
 import { exportAsFile } from '../../../helpers/utils/util'
-import ToggleButton from '../../../components/ui/toggle-button'
+import ToggleButton from 'react-toggle-button'
 import TextField from '../../../components/ui/text-field'
 import Button from '../../../components/ui/button'
 import { MOBILE_SYNC_ROUTE } from '../../../helpers/constants/routes'
@@ -13,9 +14,8 @@ export default class AdvancedTab extends PureComponent {
   }
 
   static propTypes = {
-    setUseNonceField: PropTypes.func,
-    useNonceField: PropTypes.bool,
     setHexDataFeatureFlag: PropTypes.func,
+    setRpcTarget: PropTypes.func,
     displayWarning: PropTypes.func,
     showResetAccountConfirmationModal: PropTypes.func,
     warning: PropTypes.string,
@@ -23,39 +23,175 @@ export default class AdvancedTab extends PureComponent {
     sendHexData: PropTypes.bool,
     setAdvancedInlineGasFeatureFlag: PropTypes.func,
     advancedInlineGas: PropTypes.bool,
-    setTransactionTimeFeatureFlag: PropTypes.func,
-    transactionTime: PropTypes.bool,
     showFiatInTestnets: PropTypes.bool,
-    autoLockTimeLimit: PropTypes.number,
-    hasNativeIPFSSupport: PropTypes.bool,
-    setAutoLockTimeLimit: PropTypes.func.isRequired,
     setShowFiatConversionOnTestnetsPreference: PropTypes.func.isRequired,
-    setIpfsGateway: PropTypes.func.isRequired,
-    ipfsGateway: PropTypes.string.isRequired,
   }
 
   state = {
-    autoLockTimeLimit: this.props.autoLockTimeLimit,
-    lockTimeError: '',
-    ipfsGateway: this.props.ipfsGateway,
-    ipfsGatewayError: '',
+    newRpc: '',
+    chainId: '',
+    showOptions: false,
+    ticker: '',
+    nickname: '',
   }
 
-  _renderMobileSync () {
+  renderNewRpcUrl () {
     const { t } = this.context
-    const { history } = this.props
+    const { newRpc, chainId, ticker, nickname } = this.state
 
     return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-mobile-sync">
+      <div className="settings-page__content-row">
+        <div className="settings-page__content-item">
+          <span>{ t('newNetwork') }</span>
+        </div>
+        <div className="settings-page__content-item">
+          <div className="settings-page__content-item-col">
+            <TextField
+              type="text"
+              id="new-rpc"
+              placeholder={t('rpcURL')}
+              value={newRpc}
+              onChange={e => this.setState({ newRpc: e.target.value })}
+              onKeyPress={e => {
+                if (e.key === 'Enter') {
+                  this.validateRpc(newRpc, chainId, ticker, nickname)
+                }
+              }}
+              fullWidth
+              margin="dense"
+            />
+            <TextField
+              type="text"
+              id="chainid"
+              placeholder={t('optionalChainId')}
+              value={chainId}
+              onChange={e => this.setState({ chainId: e.target.value })}
+              onKeyPress={e => {
+                if (e.key === 'Enter') {
+                  this.validateRpc(newRpc, chainId, ticker, nickname)
+                }
+              }}
+              style={{
+                display: this.state.showOptions ? null : 'none',
+              }}
+              fullWidth
+              margin="dense"
+            />
+            <TextField
+              type="text"
+              id="ticker"
+              placeholder={t('optionalSymbol')}
+              value={ticker}
+              onChange={e => this.setState({ ticker: e.target.value })}
+              onKeyPress={e => {
+                if (e.key === 'Enter') {
+                  this.validateRpc(newRpc, chainId, ticker, nickname)
+                }
+              }}
+              style={{
+                display: this.state.showOptions ? null : 'none',
+              }}
+              fullWidth
+              margin="dense"
+            />
+            <TextField
+              type="text"
+              id="nickname"
+              placeholder={t('optionalNickname')}
+              value={nickname}
+              onChange={e => this.setState({ nickname: e.target.value })}
+              onKeyPress={e => {
+                if (e.key === 'Enter') {
+                  this.validateRpc(newRpc, chainId, ticker, nickname)
+                }
+              }}
+              style={{
+                display: this.state.showOptions ? null : 'none',
+              }}
+              fullWidth
+              margin="dense"
+            />
+            <div className="flex-row flex-align-center space-between">
+              <span className="settings-tab__advanced-link"
+                    onClick={e => {
+                      e.preventDefault()
+                      this.setState({ showOptions: !this.state.showOptions })
+                    }}
+              >
+                { t(this.state.showOptions ? 'hideAdvancedOptions' : 'showAdvancedOptions') }
+              </span>
+              <button
+                className="button btn-primary settings-tab__rpc-save-button"
+                onClick={e => {
+                  e.preventDefault()
+                  this.validateRpc(newRpc, chainId, ticker, nickname)
+                }}
+              >
+                { t('save') }
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  validateRpc (newRpc, chainId, ticker = 'ETH', nickname) {
+    const { setRpcTarget, displayWarning } = this.props
+    if (validUrl.isWebUri(newRpc)) {
+      this.context.metricsEvent({
+        eventOpts: {
+          category: 'Settings',
+          action: 'Custom RPC',
+          name: 'Success',
+        },
+        customVariables: {
+          networkId: newRpc,
+          chainId,
+        },
+      })
+      if (!!chainId && Number.isNaN(parseInt(chainId))) {
+        return displayWarning(`${this.context.t('invalidInput')} chainId`)
+      }
+
+      setRpcTarget(newRpc, chainId, ticker, nickname)
+    } else {
+      this.context.metricsEvent({
+        eventOpts: {
+          category: 'Settings',
+          action: 'Custom RPC',
+          name: 'Error',
+        },
+        customVariables: {
+          networkId: newRpc,
+          chainId,
+        },
+      })
+      const appendedRpc = `http://${newRpc}`
+
+      if (validUrl.isWebUri(appendedRpc)) {
+        displayWarning(this.context.t('uriErrorMsg'))
+      } else {
+        displayWarning(this.context.t('invalidRPC'))
+      }
+    }
+  }
+
+  renderMobileSync () {
+    const { t } = this.context
+    const { history } = this.props
+//
+    return (
+      <div className="settings-page__content-row">
         <div className="settings-page__content-item">
           <span>{ t('syncWithMobile') }</span>
         </div>
         <div className="settings-page__content-item">
           <div className="settings-page__content-item-col">
             <Button
-              type="secondary"
+              type="primary"
               large
-              onClick={(event) => {
+              onClick={event => {
                 event.preventDefault()
                 history.push(MOBILE_SYNC_ROUTE)
               }}
@@ -68,16 +204,12 @@ export default class AdvancedTab extends PureComponent {
     )
   }
 
-  renderMobileSync () {
-    return null
-  }
-
   renderStateLogs () {
     const { t } = this.context
     const { displayWarning } = this.props
 
     return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-state-logs">
+      <div className="settings-page__content-row">
         <div className="settings-page__content-item">
           <span>{ t('stateLogs') }</span>
           <span className="settings-page__content-description">
@@ -87,14 +219,14 @@ export default class AdvancedTab extends PureComponent {
         <div className="settings-page__content-item">
           <div className="settings-page__content-item-col">
             <Button
-              type="secondary"
+              type="primary"
               large
               onClick={() => {
                 window.logStateString((err, result) => {
                   if (err) {
                     displayWarning(t('stateLogError'))
                   } else {
-                    exportAsFile(`${t('stateLogFileName')}.json`, result)
+                    exportAsFile('MetaMask State Logs.json', result)
                   }
                 })
               }}
@@ -112,20 +244,17 @@ export default class AdvancedTab extends PureComponent {
     const { showResetAccountConfirmationModal } = this.props
 
     return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-reset-account">
+      <div className="settings-page__content-row">
         <div className="settings-page__content-item">
           <span>{ t('resetAccount') }</span>
-          <span className="settings-page__content-description">
-            { t('resetAccountDescription') }
-          </span>
         </div>
         <div className="settings-page__content-item">
           <div className="settings-page__content-item-col">
             <Button
-              type="warning"
+              type="secondary"
               large
-              className="settings-tab__button--red"
-              onClick={(event) => {
+              className="settings-tab__button--orange"
+              onClick={event => {
                 event.preventDefault()
                 this.context.metricsEvent({
                   eventOpts: {
@@ -150,7 +279,7 @@ export default class AdvancedTab extends PureComponent {
     const { sendHexData, setHexDataFeatureFlag } = this.props
 
     return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-hex-data">
+      <div className="settings-page__content-row">
         <div className="settings-page__content-item">
           <span>{ t('showHexData') }</span>
           <div className="settings-page__content-description">
@@ -161,9 +290,9 @@ export default class AdvancedTab extends PureComponent {
           <div className="settings-page__content-item-col">
             <ToggleButton
               value={sendHexData}
-              onToggle={(value) => setHexDataFeatureFlag(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
+              onToggle={value => setHexDataFeatureFlag(!value)}
+              activeLabel=""
+              inactiveLabel=""
             />
           </div>
         </div>
@@ -176,7 +305,7 @@ export default class AdvancedTab extends PureComponent {
     const { advancedInlineGas, setAdvancedInlineGasFeatureFlag } = this.props
 
     return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-advanced-gas-inline">
+      <div className="settings-page__content-row">
         <div className="settings-page__content-item">
           <span>{ t('showAdvancedGasInline') }</span>
           <div className="settings-page__content-description">
@@ -187,35 +316,9 @@ export default class AdvancedTab extends PureComponent {
           <div className="settings-page__content-item-col">
             <ToggleButton
               value={advancedInlineGas}
-              onToggle={(value) => setAdvancedInlineGasFeatureFlag(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
-            />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  renderTransactionTimeEstimates () {
-    const { t } = this.context
-    const { transactionTime, setTransactionTimeFeatureFlag } = this.props
-
-    return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-transaction-time-inline">
-        <div className="settings-page__content-item">
-          <span>{ t('transactionTime') }</span>
-          <div className="settings-page__content-description">
-            { t('showTransactionTimeDescription') }
-          </div>
-        </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              value={transactionTime}
-              onToggle={(value) => setTransactionTimeFeatureFlag(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
+              onToggle={value => setAdvancedInlineGasFeatureFlag(!value)}
+              activeLabel=""
+              inactiveLabel=""
             />
           </div>
         </div>
@@ -231,7 +334,7 @@ export default class AdvancedTab extends PureComponent {
     } = this.props
 
     return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-show-testnet-conversion">
+      <div className="settings-page__content-row">
         <div className="settings-page__content-item">
           <span>{ t('showFiatConversionInTestnets') }</span>
           <div className="settings-page__content-description">
@@ -242,9 +345,9 @@ export default class AdvancedTab extends PureComponent {
           <div className="settings-page__content-item-col">
             <ToggleButton
               value={showFiatInTestnets}
-              onToggle={(value) => setShowFiatConversionOnTestnetsPreference(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
+              onToggle={value => setShowFiatConversionOnTestnetsPreference(!value)}
+              activeLabel=""
+              inactiveLabel=""
             />
           </div>
         </div>
@@ -252,179 +355,7 @@ export default class AdvancedTab extends PureComponent {
     )
   }
 
-  renderUseNonceOptIn () {
-    const { t } = this.context
-    const { useNonceField, setUseNonceField } = this.props
-
-    return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-custom-nonce">
-        <div className="settings-page__content-item">
-          <span>{ this.context.t('nonceField') }</span>
-          <div className="settings-page__content-description">
-            { t('nonceFieldDescription') }
-          </div>
-        </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              value={useNonceField}
-              onToggle={(value) => setUseNonceField(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
-            />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  handleLockChange (time) {
-    const { t } = this.context
-    const autoLockTimeLimit = Math.max(Number(time), 0)
-
-    this.setState(() => {
-      let lockTimeError = ''
-
-      if (autoLockTimeLimit > 10080) {
-        lockTimeError = t('lockTimeTooGreat')
-      }
-
-      return {
-        autoLockTimeLimit,
-        lockTimeError,
-      }
-    })
-  }
-
-  renderAutoLockTimeLimit () {
-    const { t } = this.context
-    const { lockTimeError } = this.state
-    const {
-      autoLockTimeLimit,
-      setAutoLockTimeLimit,
-    } = this.props
-
-    return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-auto-lock">
-        <div className="settings-page__content-item">
-          <span>{ t('autoLockTimeLimit') }</span>
-          <div className="settings-page__content-description">
-            { t('autoLockTimeLimitDescription') }
-          </div>
-        </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <TextField
-              type="number"
-              id="autoTimeout"
-              placeholder="5"
-              value={this.state.autoLockTimeLimit}
-              defaultValue={autoLockTimeLimit}
-              onChange={(e) => this.handleLockChange(e.target.value)}
-              error={lockTimeError}
-              fullWidth
-              margin="dense"
-              min={0}
-            />
-            <Button
-              type="primary"
-              className="settings-tab__rpc-save-button"
-              disabled={lockTimeError !== ''}
-              onClick={() => {
-                setAutoLockTimeLimit(this.state.autoLockTimeLimit)
-              }}
-            >
-              { t('save') }
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  handleIpfsGatewayChange (url) {
-    const { t } = this.context
-
-    this.setState(() => {
-      let ipfsGatewayError = ''
-
-      try {
-
-        const urlObj = new URL(addUrlProtocolPrefix(url))
-        if (!urlObj.host) {
-          throw new Error()
-        }
-
-        // don't allow the use of this gateway
-        if (urlObj.host === 'gateway.ipfs.io') {
-          throw new Error('Forbidden gateway')
-        }
-
-      } catch (error) {
-        ipfsGatewayError = (
-          error.message === 'Forbidden gateway'
-            ? t('forbiddenIpfsGateway')
-            : t('invalidIpfsGateway')
-        )
-      }
-
-      return {
-        ipfsGateway: url,
-        ipfsGatewayError,
-      }
-    })
-  }
-
-  handleIpfsGatewaySave () {
-
-    const url = new URL(addUrlProtocolPrefix(this.state.ipfsGateway))
-    const host = url.host
-
-    this.props.setIpfsGateway(host)
-  }
-
-  renderIpfsGatewayControl () {
-    const { t } = this.context
-    const { ipfsGatewayError } = this.state
-    const { hasNativeIPFSSupport } = this.props
-    if (!hasNativeIPFSSupport) {
-      return ''
-    }
-    return (
-      <div className="settings-page__content-row" data-testid="advanced-setting-ipfs-gateway">
-        <div className="settings-page__content-item">
-          <span>{ t('ipfsGateway') }</span>
-          <div className="settings-page__content-description">
-            { t('ipfsGatewayDescription') }
-          </div>
-        </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <TextField
-              type="text"
-              value={this.state.ipfsGateway}
-              onChange={(e) => this.handleIpfsGatewayChange(e.target.value)}
-              error={ipfsGatewayError}
-              fullWidth
-              margin="dense"
-            />
-            <Button
-              type="primary"
-              className="settings-tab__rpc-save-button"
-              disabled={Boolean(ipfsGatewayError)}
-              onClick={() => {
-                this.handleIpfsGatewaySave()
-              }}
-            >
-              { t('save') }
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  render () {
+  renderContent () {
     const { warning } = this.props
 
     return (
@@ -432,24 +363,16 @@ export default class AdvancedTab extends PureComponent {
         { warning && <div className="settings-tab__error">{ warning }</div> }
         { this.renderStateLogs() }
         { this.renderMobileSync() }
+        { this.renderNewRpcUrl() }
         { this.renderResetAccount() }
         { this.renderAdvancedGasInputInline() }
-        { this.renderTransactionTimeEstimates() }
         { this.renderHexDataOptIn() }
         { this.renderShowConversionInTestnets() }
-        { this.renderUseNonceOptIn() }
-        { this.renderAutoLockTimeLimit() }
-        { this.renderIpfsGatewayControl() }
       </div>
     )
   }
-}
 
-function addUrlProtocolPrefix (urlString) {
-  if (!urlString.match(
-    /(^http:\/\/)|(^https:\/\/)/,
-  )) {
-    return 'https://' + urlString
+  render () {
+    return this.renderContent()
   }
-  return urlString
 }

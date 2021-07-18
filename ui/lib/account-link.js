@@ -1,8 +1,4 @@
-export default function getAccountLink (address, network, rpcPrefs) {
-  if (rpcPrefs && rpcPrefs.blockExplorerUrl) {
-    return `${rpcPrefs.blockExplorerUrl.replace(/\/+$/, '')}/address/${address}`
-  }
-
+module.exports = function (address, network) {
   const net = parseInt(network)
   let link
   switch (net) {
@@ -20,9 +16,6 @@ export default function getAccountLink (address, network, rpcPrefs) {
       break
     case 42: // kovan test net
       link = `https://kovan.etherscan.io/address/${address}`
-      break
-    case 5: // goerli test net
-      link = `https://goerli.etherscan.io/address/${address}`
       break
     default:
       link = ''

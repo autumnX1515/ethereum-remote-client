@@ -1,18 +1,21 @@
-import { createStore, applyMiddleware } from 'redux'
-import thunkMiddleware from 'redux-thunk'
-import { composeWithDevTools } from 'remote-redux-devtools'
-import rootReducer from '../ducks'
+const createStore = require('redux').createStore
+const applyMiddleware = require('redux').applyMiddleware
+const thunkMiddleware = require('redux-thunk').default
+const rootReducer = require('../ducks')
+const createLogger = require('redux-logger').createLogger
 
-export default function configureStore (initialState) {
-  const composeEnhancers = composeWithDevTools({
-    name: 'MetaMask',
-    hostname: 'localhost',
-    port: 8000,
-    realtime: Boolean(process.env.METAMASK_DEBUG),
-  })
-  return createStore(rootReducer, initialState, composeEnhancers(
-    applyMiddleware(
-      thunkMiddleware,
-    ),
-  ))
+global.METAMASK_DEBUG = process.env.METAMASK_DEBUG
+
+module.exports = configureStore
+
+const loggerMiddleware = createLogger({
+  predicate: () => global.METAMASK_DEBUG,
+})
+
+const middlewares = [thunkMiddleware, loggerMiddleware]
+
+const createStoreWithMiddleware = applyMiddleware(...middlewares)(createStore)
+
+function configureStore (initialState) {
+  return createStoreWithMiddleware(rootReducer, initialState)
 }

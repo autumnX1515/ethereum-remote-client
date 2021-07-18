@@ -1,60 +1,55 @@
-import extension from 'extensionizer'
-import ethUtil from 'ethereumjs-util'
-import assert from 'assert'
-import BN from 'bn.js'
-import { memoize } from 'lodash'
-
-import {
+const ethUtil = require('ethereumjs-util')
+const assert = require('assert')
+const BN = require('bn.js')
+const {
   ENVIRONMENT_TYPE_POPUP,
   ENVIRONMENT_TYPE_NOTIFICATION,
   ENVIRONMENT_TYPE_FULLSCREEN,
-  ENVIRONMENT_TYPE_BACKGROUND,
   PLATFORM_FIREFOX,
   PLATFORM_OPERA,
   PLATFORM_CHROME,
   PLATFORM_EDGE,
   PLATFORM_BRAVE,
-} from './enums'
+} = require('./enums')
 
 /**
- * @see {@link getEnvironmentType}
+ * Generates an example stack trace
+ *
+ * @returns {string} A stack trace
+ *
  */
-const getEnvironmentTypeMemo = memoize((url) => {
-  const parsedUrl = new URL(url)
-  if (parsedUrl.pathname === '/popup.html') {
+function getStack () {
+  const stack = new Error('Stack trace generator - not an error').stack
+  return stack
+}
+
+/**
+ * Used to determine the window type through which the app is being viewed.
+ *  - 'popup' refers to the extension opened through the browser app icon (in top right corner in chrome and firefox)
+ *  - 'responsive' refers to the main browser window
+ *  - 'notification' refers to the popup that appears in its own window when taking action outside of metamask
+ *
+ * @returns {string} A single word label that represents the type of window through which the app is being viewed
+ *
+ */
+const getEnvironmentType = (url = window.location.href) => {
+  if (url.match(/popup.html(?:#.*)*$/)) {
     return ENVIRONMENT_TYPE_POPUP
-  } else if (['/home.html', '/phishing.html'].includes(parsedUrl.pathname)) {
+  } else if (url.match(/home.html(?:\?.+)*$/) || url.match(/home.html(?:#.*)*$/)) {
     return ENVIRONMENT_TYPE_FULLSCREEN
-  } else if (parsedUrl.pathname === '/notification.html') {
-    return ENVIRONMENT_TYPE_NOTIFICATION
   } else {
-    return ENVIRONMENT_TYPE_BACKGROUND
+    return ENVIRONMENT_TYPE_NOTIFICATION
   }
-})
-
-/**
- * Returns the window type for the application
- *
- *  - `popup` refers to the extension opened through the browser app icon (in top right corner in chrome and firefox)
- *  - `fullscreen` refers to the main browser window
- *  - `notification` refers to the popup that appears in its own window when taking action outside of metamask
- *  - `background` refers to the background page
- *
- * NOTE: This should only be called on internal URLs.
- *
- * @param {string} [url] - the URL of the window
- * @returns {string} the environment ENUM
- */
-const getEnvironmentType = (url = window.location.href) => getEnvironmentTypeMemo(url)
+}
 
 /**
  * Returns the platform (browser) where the extension is running.
  *
- * @returns {string} - the platform ENUM
+ * @returns {string} the platform ENUM
  *
  */
-const getPlatform = (_) => {
-  const ua = window.navigator.userAgent
+const getPlatform = _ => {
+  const ua = navigator.userAgent
   if (ua.search('Firefox') !== -1) {
     return PLATFORM_FIREFOX
   } else {
@@ -73,12 +68,12 @@ const getPlatform = (_) => {
 /**
  * Checks whether a given balance of ETH, represented as a hex string, is sufficient to pay a value plus a gas fee
  *
- * @param {Object} txParams - Contains data about a transaction
+ * @param {object} txParams Contains data about a transaction
  * @param {string} txParams.gas The gas for a transaction
  * @param {string} txParams.gasPrice The price per gas for the transaction
  * @param {string} txParams.value The value of ETH to send
- * @param {string} hexBalance - A balance of ETH represented as a hex string
- * @returns {boolean} - Whether the balance is greater than or equal to the value plus the value of gas times gasPrice
+ * @param {string} hexBalance A balance of ETH represented as a hex string
+ * @returns {boolean} Whether the balance is greater than or equal to the value plus the value of gas times gasPrice
  *
  */
 function sufficientBalance (txParams, hexBalance) {
@@ -98,8 +93,8 @@ function sufficientBalance (txParams, hexBalance) {
 /**
  * Converts a BN object to a hex string with a '0x' prefix
  *
- * @param {BN} inputBn - The BN to convert to a hex string
- * @returns {string} - A '0x' prefixed hex string
+ * @param {BN} inputBn The BN to convert to a hex string
+ * @returns {string} A '0x' prefixed hex string
  *
  */
 function bnToHex (inputBn) {
@@ -109,8 +104,8 @@ function bnToHex (inputBn) {
 /**
  * Converts a hex string to a BN object
  *
- * @param {string} inputHex - A number represented as a hex string
- * @returns {Object} - A BN object
+ * @param {string} inputHex A number represented as a hex string
+ * @returns {Object} A BN object
  *
  */
 function hexToBn (inputHex) {
@@ -120,10 +115,10 @@ function hexToBn (inputHex) {
 /**
  * Used to multiply a BN by a fraction
  *
- * @param {BN} targetBN - The number to multiply by a fraction
- * @param {number|string} numerator - The numerator of the fraction multiplier
- * @param {number|string} denominator - The denominator of the fraction multiplier
- * @returns {BN} - The product of the multiplication
+ * @param {BN} targetBN The number to multiply by a fraction
+ * @param {number|string} numerator The numerator of the fraction multiplier
+ * @param {number|string} denominator The denominator of the fraction multiplier
+ * @returns {BN} The product of the multiplication
  *
  */
 function BnMultiplyByFraction (targetBN, numerator, denominator) {
@@ -132,57 +127,26 @@ function BnMultiplyByFraction (targetBN, numerator, denominator) {
   return targetBN.mul(numBN).div(denomBN)
 }
 
-/**
- * Returns an Error if extension.runtime.lastError is present
- * this is a workaround for the non-standard error object that's used
- * @returns {Error}
- */
-function checkForError () {
-  const lastError = extension.runtime.lastError
-  if (!lastError) {
-    return
-  }
-  // if it quacks like an Error, its an Error
-  if (lastError.stack && lastError.message) {
-    return lastError
-  }
-  // repair incomplete error object (eg chromium v77)
-  return new Error(lastError.message)
-}
-
-/**
- * Checks whether the given value is a 0x-prefixed, non-zero, non-zero-padded,
- * hexadecimal string.
- *
- * @param {any} value - The value to check.
- * @returns {boolean} True if the value is a correctly formatted hex string,
- * false otherwise.
- */
-function isPrefixedFormattedHexString (value) {
-  if (typeof value !== 'string') {
-    return false
-  }
-  return (/^0x[1-9a-f]+[0-9a-f]*$/ui).test(value)
-}
-
-const hasNativeIPFSSupport = async () => {
-  return new Promise((resolve) => {
-    if (!window.chrome || !window.chrome.ipfs) {
-      resolve(false)
-      return
-    }
-    window.chrome.ipfs.getIPFSEnabled(resolve)
+function applyListeners (listeners, emitter) {
+  Object.keys(listeners).forEach((key) => {
+    emitter.on(key, listeners[key])
   })
 }
 
-export {
+function removeListeners (listeners, emitter) {
+  Object.keys(listeners).forEach((key) => {
+    emitter.removeListener(key, listeners[key])
+  })
+}
+
+module.exports = {
+  removeListeners,
+  applyListeners,
   getPlatform,
+  getStack,
   getEnvironmentType,
   sufficientBalance,
   hexToBn,
   bnToHex,
   BnMultiplyByFraction,
-  checkForError,
-  isPrefixedFormattedHexString,
-  hasNativeIPFSSupport,
 }

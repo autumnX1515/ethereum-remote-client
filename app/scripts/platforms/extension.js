@@ -1,9 +1,7 @@
-import extension from 'extensionizer'
-import { createExplorerLink as explorerLink } from '@metamask/etherscan-link'
-import { getEnvironmentType, checkForError } from '../lib/util'
-import { ENVIRONMENT_TYPE_BACKGROUND } from '../lib/enums'
+const extension = require('extensionizer')
+const {createExplorerLink: explorerLink} = require('etherscan-link')
 
-export default class ExtensionPlatform {
+class ExtensionPlatform {
 
   //
   // Public
@@ -12,64 +10,8 @@ export default class ExtensionPlatform {
     extension.runtime.reload()
   }
 
-  openTab (options) {
-    return new Promise((resolve, reject) => {
-      extension.tabs.create(options, (newTab) => {
-        const error = checkForError()
-        if (error) {
-          return reject(error)
-        }
-        return resolve(newTab)
-      })
-    })
-  }
-
-  openWindow (options) {
-    return new Promise((resolve, reject) => {
-      extension.windows.create(options, (newWindow) => {
-        const error = checkForError()
-        if (error) {
-          return reject(error)
-        }
-        return resolve(newWindow)
-      })
-    })
-  }
-
-  focusWindow (windowId) {
-    return new Promise((resolve, reject) => {
-      extension.windows.update(windowId, { focused: true }, () => {
-        const error = checkForError()
-        if (error) {
-          return reject(error)
-        }
-        return resolve()
-      })
-    })
-  }
-
-  updateWindowPosition (windowId, left, top) {
-    return new Promise((resolve, reject) => {
-      extension.windows.update(windowId, { left, top }, () => {
-        const error = checkForError()
-        if (error) {
-          return reject(error)
-        }
-        return resolve()
-      })
-    })
-  }
-
-  getLastFocusedWindow () {
-    return new Promise((resolve, reject) => {
-      extension.windows.getLastFocused((windowObject) => {
-        const error = checkForError()
-        if (error) {
-          return reject(error)
-        }
-        return resolve(windowObject)
-      })
-    })
+  openWindow ({ url }) {
+    extension.tabs.create({ url })
   }
 
   closeCurrentWindow () {
@@ -92,10 +34,7 @@ export default class ExtensionPlatform {
     if (route) {
       extensionURL += `#${route}`
     }
-    this.openTab({ url: extensionURL })
-    if (getEnvironmentType() !== ENVIRONMENT_TYPE_BACKGROUND) {
-      window.close()
-    }
+    this.openWindow({ url: extensionURL })
   }
 
   getPlatformInfo (cb) {
@@ -105,7 +44,6 @@ export default class ExtensionPlatform {
       })
     } catch (e) {
       cb(e)
-      return
     }
   }
 
@@ -122,65 +60,16 @@ export default class ExtensionPlatform {
     }
   }
 
-  getAllWindows () {
-    return new Promise((resolve, reject) => {
-      extension.windows.getAll((windows) => {
-        const error = checkForError()
-        if (error) {
-          return reject(error)
-        }
-        return resolve(windows)
-      })
-    })
+  addMessageListener (cb) {
+    extension.runtime.onMessage.addListener(cb)
   }
 
-  getActiveTabs () {
-    return new Promise((resolve, reject) => {
-      extension.tabs.query({ active: true }, (tabs) => {
-        const error = checkForError()
-        if (error) {
-          return reject(error)
-        }
-        return resolve(tabs)
-      })
-    })
-  }
-
-  currentTab () {
-    return new Promise((resolve, reject) => {
-      extension.tabs.getCurrent((tab) => {
-        const err = checkForError()
-        if (err) {
-          reject(err)
-        } else {
-          resolve(tab)
-        }
-      })
-    })
-  }
-
-  switchToTab (tabId) {
-    return new Promise((resolve, reject) => {
-      extension.tabs.update(tabId, { highlighted: true }, (tab) => {
-        const err = checkForError()
-        if (err) {
-          reject(err)
-        } else {
-          resolve(tab)
-        }
-      })
-    })
-  }
-
-  closeTab (tabId) {
-    return new Promise((resolve, reject) => {
-      extension.tabs.remove(tabId, () => {
-        const err = checkForError()
-        if (err) {
-          reject(err)
-        } else {
-          resolve()
-        }
+  sendMessage (message, query = {}) {
+    const id = query.id
+    delete query.id
+    extension.tabs.query({ ...query }, tabs => {
+      tabs.forEach(tab => {
+        extension.tabs.sendMessage(id || tab.id, message)
       })
     })
   }
@@ -193,7 +82,7 @@ export default class ExtensionPlatform {
     const nonce = parseInt(txMeta.txParams.nonce, 16)
 
     const title = 'Confirmed transaction'
-    const message = `Transaction ${nonce} confirmed! View on Etherscan`
+    const message = `Transaction ${nonce} confirmed! View on EtherScan`
     this._showNotification(title, message, url)
   }
 
@@ -209,22 +98,24 @@ export default class ExtensionPlatform {
     extension.notifications.create(
       url,
       {
-        'type': 'basic',
-        'title': title,
-        'iconUrl': extension.extension.getURL('../../images/icon-64.png'),
-        'message': message,
+      'type': 'basic',
+      'title': title,
+      'iconUrl': extension.extension.getURL('../../images/icon-64.png'),
+      'message': message,
       })
   }
 
   _subscribeToNotificationClicked () {
-    if (!extension.notifications.onClicked.hasListener(this._viewOnEtherscan)) {
-      extension.notifications.onClicked.addListener(this._viewOnEtherscan)
+    if (!extension.notifications.onClicked.hasListener(this._viewOnEtherScan)) {
+      extension.notifications.onClicked.addListener(this._viewOnEtherScan)
     }
   }
 
-  _viewOnEtherscan (txId) {
-    if (txId.startsWith('https://')) {
+  _viewOnEtherScan (txId) {
+    if (txId.startsWith('http://')) {
       extension.tabs.create({ url: txId })
     }
   }
 }
+
+module.exports = ExtensionPlatform

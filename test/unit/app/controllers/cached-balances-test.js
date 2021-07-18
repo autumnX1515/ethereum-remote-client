@@ -1,10 +1,10 @@
-import assert from 'assert'
-import sinon from 'sinon'
-import CachedBalancesController from '../../../../app/scripts/controllers/cached-balances'
+const assert = require('assert')
+const sinon = require('sinon')
+const CachedBalancesController = require('../../../../app/scripts/controllers/cached-balances')
 
-describe('CachedBalancesController', function () {
-  describe('updateCachedBalances', function () {
-    it('should update the cached balances', async function () {
+describe('CachedBalancesController', () => {
+  describe('updateCachedBalances', () => {
+    it('should update the cached balances', async () => {
       const controller = new CachedBalancesController({
         getNetwork: () => Promise.resolve(17),
         accountTracker: {
@@ -27,8 +27,8 @@ describe('CachedBalancesController', function () {
     })
   })
 
-  describe('_generateBalancesToCache', function () {
-    it('should generate updated account balances where the current network was updated', function () {
+  describe('_generateBalancesToCache', () => {
+    it('should generate updated account balances where the current network was updated', () => {
       const controller = new CachedBalancesController({
         accountTracker: {
           store: {
@@ -71,7 +71,7 @@ describe('CachedBalancesController', function () {
       })
     })
 
-    it('should generate updated account balances where the a new network was selected', function () {
+    it('should generate updated account balances where the a new network was selected', () => {
       const controller = new CachedBalancesController({
         accountTracker: {
           store: {
@@ -109,8 +109,8 @@ describe('CachedBalancesController', function () {
     })
   })
 
-  describe('_registerUpdates', function () {
-    it('should subscribe to the account tracker with the updateCachedBalances method', async function () {
+  describe('_registerUpdates', () => {
+    it('should subscribe to the account tracker with the updateCachedBalances method', async () => {
       const subscribeSpy = sinon.spy()
       const controller = new CachedBalancesController({
         getNetwork: () => Promise.resolve(17),

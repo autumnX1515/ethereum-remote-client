@@ -35,33 +35,30 @@ proxyquire('../gas-modal-page-container.container.js', {
       return () => ({})
     },
   },
-  '../../../../selectors': {
+  '../../../../selectors/custom-gas': {
     getBasicGasEstimateLoadingStatus: (s) => `mockBasicGasEstimateLoadingStatus:${Object.keys(s).length}`,
     getRenderableBasicEstimateData: (s) => `mockRenderableBasicEstimateData:${Object.keys(s).length}`,
     getDefaultActiveButtonIndex: (a, b) => a + b,
-    getCurrentEthBalance: (state) => state.metamask.balance || '0x0',
-    getSendToken: () => null,
-    getTokenBalance: (state) => state.metamask.send.tokenBalance || '0x0',
   },
   '../../../../store/actions': actionSpies,
   '../../../../ducks/gas/gas.duck': gasActionSpies,
   '../../../../ducks/confirm-transaction/confirm-transaction.duck': confirmTransactionActionSpies,
   '../../../../ducks/send/send.duck': sendActionSpies,
+  '../../../../selectors/selectors.js': {
+    getCurrentEthBalance: (state) => state.metamask.balance || '0x0',
+  },
 })
 
-describe('gas-modal-page-container container', function () {
+describe('gas-modal-page-container container', () => {
 
-  describe('mapStateToProps()', function () {
-    it('should map the correct properties to props', function () {
+  describe('mapStateToProps()', () => {
+    it('should map the correct properties to props', () => {
       const baseMockState = {
         appState: {
           modal: {
             modalState: {
               props: {
                 hideBasic: true,
-                txData: {
-                  id: 34,
-                },
               },
             },
           },
@@ -71,7 +68,6 @@ describe('gas-modal-page-container container', function () {
             gasLimit: '16',
             gasPrice: '32',
             amount: '64',
-            maxModeOn: false,
           },
           currentCurrency: 'abc',
           conversionRate: 50,
@@ -81,14 +77,6 @@ describe('gas-modal-page-container container', function () {
           provider: {
             type: 'mainnet',
           },
-          currentNetworkTxList: [{
-            id: 34,
-            txParams: {
-              gas: '0x1600000',
-              gasPrice: '0x3200000',
-              value: '0x640000000000000',
-            },
-          }],
         },
         gas: {
           basicEstimates: {
@@ -118,7 +106,6 @@ describe('gas-modal-page-container container', function () {
         },
       }
       const baseExpectedResult = {
-        balance: '0x0',
         isConfirm: true,
         customGasPrice: 4.294967295,
         customGasLimit: 2863311530,
@@ -127,7 +114,6 @@ describe('gas-modal-page-container container', function () {
         blockTime: 12,
         customModalGasLimitInHex: 'aaaaaaaa',
         customModalGasPriceInHex: 'ffffffff',
-        customGasTotal: 'aaaaaaa955555556',
         customPriceIsSafe: true,
         gasChartProps: {
           'currentPrice': 4.294967295,
@@ -153,16 +139,9 @@ describe('gas-modal-page-container container', function () {
         },
         insufficientBalance: true,
         isSpeedUp: false,
-        isRetry: false,
         txId: 34,
         isEthereumNetwork: true,
         isMainnet: true,
-        maxModeOn: false,
-        sendToken: null,
-        tokenBalance: '0x0',
-        transaction: {
-          id: 34,
-        },
       }
       const baseMockOwnProps = { transaction: { id: 34 } }
       const tests = [
@@ -171,7 +150,7 @@ describe('gas-modal-page-container container', function () {
           mockState: Object.assign({}, baseMockState, {
             metamask: { ...baseMockState.metamask, balance: '0xfffffffffffffffffffff' },
           }),
-          expectedResult: Object.assign({}, baseExpectedResult, { balance: '0xfffffffffffffffffffff', insufficientBalance: false }),
+          expectedResult: Object.assign({}, baseExpectedResult, { insufficientBalance: false }),
           mockOwnProps: baseMockOwnProps,
         },
         {
@@ -179,7 +158,7 @@ describe('gas-modal-page-container container', function () {
           mockOwnProps: Object.assign({}, baseMockOwnProps, {
             transaction: { id: 34, status: 'submitted' },
           }),
-          expectedResult: Object.assign({}, baseExpectedResult, { isSpeedUp: true, transaction: { id: 34 } }),
+          expectedResult: Object.assign({}, baseExpectedResult, { isSpeedUp: true }),
         },
         {
           mockState: Object.assign({}, baseMockState, {
@@ -245,7 +224,7 @@ describe('gas-modal-page-container container', function () {
       ]
 
       let result
-      tests.forEach(({ mockState, mockOwnProps, expectedResult }) => {
+      tests.forEach(({ mockState, mockOwnProps, expectedResult}) => {
         result = mapStateToProps(mockState, mockOwnProps)
         assert.deepEqual(result, expectedResult)
       })
@@ -253,31 +232,31 @@ describe('gas-modal-page-container container', function () {
 
   })
 
-  describe('mapDispatchToProps()', function () {
+  describe('mapDispatchToProps()', () => {
     let dispatchSpy
     let mapDispatchToPropsObject
 
-    beforeEach(function () {
+    beforeEach(() => {
       dispatchSpy = sinon.spy()
       mapDispatchToPropsObject = mapDispatchToProps(dispatchSpy)
     })
 
-    afterEach(function () {
+    afterEach(() => {
       actionSpies.hideModal.resetHistory()
       gasActionSpies.setCustomGasPrice.resetHistory()
       gasActionSpies.setCustomGasLimit.resetHistory()
     })
 
-    describe('hideGasButtonGroup()', function () {
-      it('should dispatch a hideGasButtonGroup action', function () {
+    describe('hideGasButtonGroup()', () => {
+      it('should dispatch a hideGasButtonGroup action', () => {
         mapDispatchToPropsObject.hideGasButtonGroup()
         assert(dispatchSpy.calledOnce)
         assert(sendActionSpies.hideGasButtonGroup.calledOnce)
       })
     })
 
-    describe('cancelAndClose()', function () {
-      it('should dispatch a hideModal action', function () {
+    describe('cancelAndClose()', () => {
+      it('should dispatch a hideModal action', () => {
         mapDispatchToPropsObject.cancelAndClose()
         assert(dispatchSpy.calledTwice)
         assert(actionSpies.hideModal.calledOnce)
@@ -285,33 +264,36 @@ describe('gas-modal-page-container container', function () {
       })
     })
 
-    describe('updateCustomGasPrice()', function () {
-      it('should dispatch a setCustomGasPrice action with the arg passed to updateCustomGasPrice hex prefixed', function () {
+    describe('updateCustomGasPrice()', () => {
+      it('should dispatch a setCustomGasPrice action with the arg passed to updateCustomGasPrice hex prefixed', () => {
         mapDispatchToPropsObject.updateCustomGasPrice('ffff')
-        assert(dispatchSpy.calledOnce)
-        assert(gasActionSpies.setCustomGasPrice.calledOnce)
-        assert.equal(gasActionSpies.setCustomGasPrice.getCall(0).args[0], '0xffff')
-      })
-
-      it('should dispatch a setCustomGasPrice action', function () {
-        mapDispatchToPropsObject.updateCustomGasPrice('0xffff')
         assert(dispatchSpy.calledOnce)
         assert(gasActionSpies.setCustomGasPrice.calledOnce)
         assert.equal(gasActionSpies.setCustomGasPrice.getCall(0).args[0], '0xffff')
       })
     })
 
-    describe('updateCustomGasLimit()', function () {
-      it('should dispatch a setCustomGasLimit action', function () {
-        mapDispatchToPropsObject.updateCustomGasLimit('0x10')
+    describe('convertThenUpdateCustomGasPrice()', () => {
+      it('should dispatch a setCustomGasPrice action with the arg passed to convertThenUpdateCustomGasPrice converted to WEI', () => {
+        mapDispatchToPropsObject.convertThenUpdateCustomGasPrice('0xffff')
+        assert(dispatchSpy.calledOnce)
+        assert(gasActionSpies.setCustomGasPrice.calledOnce)
+        assert.equal(gasActionSpies.setCustomGasPrice.getCall(0).args[0], '0x3b9a8e653600')
+      })
+    })
+
+
+    describe('convertThenUpdateCustomGasLimit()', () => {
+      it('should dispatch a setCustomGasLimit action with the arg passed to convertThenUpdateCustomGasLimit converted to hex', () => {
+        mapDispatchToPropsObject.convertThenUpdateCustomGasLimit(16)
         assert(dispatchSpy.calledOnce)
         assert(gasActionSpies.setCustomGasLimit.calledOnce)
         assert.equal(gasActionSpies.setCustomGasLimit.getCall(0).args[0], '0x10')
       })
     })
 
-    describe('setGasData()', function () {
-      it('should dispatch a setGasPrice and setGasLimit action with the correct props', function () {
+    describe('setGasData()', () => {
+      it('should dispatch a setGasPrice and setGasLimit action with the correct props', () => {
         mapDispatchToPropsObject.setGasData('ffff', 'aaaa')
         assert(dispatchSpy.calledTwice)
         assert(actionSpies.setGasPrice.calledOnce)
@@ -321,59 +303,56 @@ describe('gas-modal-page-container container', function () {
       })
     })
 
-    describe('updateConfirmTxGasAndCalculate()', function () {
-      it('should dispatch a updateGasAndCalculate action with the correct props', function () {
+    describe('updateConfirmTxGasAndCalculate()', () => {
+      it('should dispatch a updateGasAndCalculate action with the correct props', () => {
         mapDispatchToPropsObject.updateConfirmTxGasAndCalculate('ffff', 'aaaa')
         assert.equal(dispatchSpy.callCount, 3)
-        assert(actionSpies.setGasPrice.calledOnce)
-        assert(actionSpies.setGasLimit.calledOnce)
-        assert.equal(actionSpies.setGasLimit.getCall(0).args[0], 'ffff')
-        assert.equal(actionSpies.setGasPrice.getCall(0).args[0], 'aaaa')
+        assert(confirmTransactionActionSpies.updateGasAndCalculate.calledOnce)
+        assert.deepEqual(confirmTransactionActionSpies.updateGasAndCalculate.getCall(0).args[0], { gasLimit: 'ffff', gasPrice: 'aaaa' })
       })
     })
 
   })
 
-  describe('mergeProps', function () {
-    let stateProps
-    let dispatchProps
-    let ownProps
+  describe('mergeProps', () => {
+      let stateProps
+      let dispatchProps
+      let ownProps
 
-    beforeEach(function () {
-      stateProps = {
-        gasPriceButtonGroupProps: {
-          someGasPriceButtonGroupProp: 'foo',
-          anotherGasPriceButtonGroupProp: 'bar',
-        },
-        isConfirm: true,
-        someOtherStateProp: 'baz',
-        transaction: {},
-      }
-      dispatchProps = {
-        updateCustomGasPrice: sinon.spy(),
-        hideGasButtonGroup: sinon.spy(),
-        setGasData: sinon.spy(),
-        updateConfirmTxGasAndCalculate: sinon.spy(),
-        someOtherDispatchProp: sinon.spy(),
-        createSpeedUpTransaction: sinon.spy(),
-        hideSidebar: sinon.spy(),
-        hideModal: sinon.spy(),
-        cancelAndClose: sinon.spy(),
-      }
-      ownProps = { someOwnProp: 123 }
-    })
+      beforeEach(() => {
+        stateProps = {
+          gasPriceButtonGroupProps: {
+            someGasPriceButtonGroupProp: 'foo',
+            anotherGasPriceButtonGroupProp: 'bar',
+          },
+          isConfirm: true,
+          someOtherStateProp: 'baz',
+        }
+        dispatchProps = {
+          updateCustomGasPrice: sinon.spy(),
+          hideGasButtonGroup: sinon.spy(),
+          setGasData: sinon.spy(),
+          updateConfirmTxGasAndCalculate: sinon.spy(),
+          someOtherDispatchProp: sinon.spy(),
+          createSpeedUpTransaction: sinon.spy(),
+          hideSidebar: sinon.spy(),
+          hideModal: sinon.spy(),
+          cancelAndClose: sinon.spy(),
+        }
+        ownProps = { someOwnProp: 123 }
+      })
 
-    afterEach(function () {
-      dispatchProps.updateCustomGasPrice.resetHistory()
-      dispatchProps.hideGasButtonGroup.resetHistory()
-      dispatchProps.setGasData.resetHistory()
-      dispatchProps.updateConfirmTxGasAndCalculate.resetHistory()
-      dispatchProps.someOtherDispatchProp.resetHistory()
-      dispatchProps.createSpeedUpTransaction.resetHistory()
-      dispatchProps.hideSidebar.resetHistory()
-      dispatchProps.hideModal.resetHistory()
-    })
-    it('should return the expected props when isConfirm is true', function () {
+      afterEach(() => {
+        dispatchProps.updateCustomGasPrice.resetHistory()
+        dispatchProps.hideGasButtonGroup.resetHistory()
+        dispatchProps.setGasData.resetHistory()
+        dispatchProps.updateConfirmTxGasAndCalculate.resetHistory()
+        dispatchProps.someOtherDispatchProp.resetHistory()
+        dispatchProps.createSpeedUpTransaction.resetHistory()
+        dispatchProps.hideSidebar.resetHistory()
+        dispatchProps.hideModal.resetHistory()
+      })
+    it('should return the expected props when isConfirm is true', () => {
       const result = mergeProps(stateProps, dispatchProps, ownProps)
 
       assert.equal(result.isConfirm, true)
@@ -403,7 +382,7 @@ describe('gas-modal-page-container container', function () {
       assert.equal(dispatchProps.someOtherDispatchProp.callCount, 1)
     })
 
-    it('should return the expected props when isConfirm is false', function () {
+    it('should return the expected props when isConfirm is false', () => {
       const result = mergeProps(Object.assign({}, stateProps, { isConfirm: false }), dispatchProps, ownProps)
 
       assert.equal(result.isConfirm, false)
@@ -434,7 +413,7 @@ describe('gas-modal-page-container container', function () {
       assert.equal(dispatchProps.someOtherDispatchProp.callCount, 1)
     })
 
-    it('should dispatch the expected actions from obSubmit when isConfirm is false and isSpeedUp is true', function () {
+    it('should dispatch the expected actions from obSubmit when isConfirm is false and isSpeedUp is true', () => {
       const result = mergeProps(Object.assign({}, stateProps, { isSpeedUp: true, isConfirm: false }), dispatchProps, ownProps)
 
       result.onSubmit()

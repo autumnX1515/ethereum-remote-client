@@ -1,73 +1,73 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import { Switch, Route, matchPath } from 'react-router-dom'
+import { ENVIRONMENT_TYPE_POPUP } from '../../../../app/scripts/lib/enums'
+import { getEnvironmentType } from '../../../../app/scripts/lib/util'
 import TabBar from '../../components/app/tab-bar'
-import classnames from 'classnames'
+import c from 'classnames'
 import SettingsTab from './settings-tab'
-import AlertsTab from './alerts-tab'
-import NetworksTab from './networks-tab'
 import AdvancedTab from './advanced-tab'
 import InfoTab from './info-tab'
 import SecurityTab from './security-tab'
-import ContactListTab from './contact-list-tab'
 import {
-  ALERTS_ROUTE,
+  DEFAULT_ROUTE,
   ADVANCED_ROUTE,
   SECURITY_ROUTE,
   GENERAL_ROUTE,
   ABOUT_US_ROUTE,
   SETTINGS_ROUTE,
-  NETWORKS_ROUTE,
-  CONTACT_LIST_ROUTE,
-  CONTACT_ADD_ROUTE,
-  CONTACT_EDIT_ROUTE,
-  CONTACT_VIEW_ROUTE,
-  CONTACT_MY_ACCOUNTS_ROUTE,
-  CONTACT_MY_ACCOUNTS_VIEW_ROUTE,
-  CONTACT_MY_ACCOUNTS_EDIT_ROUTE,
 } from '../../helpers/constants/routes'
 
-class SettingsPage extends PureComponent {
+const ROUTES_TO_I18N_KEYS = {
+  [GENERAL_ROUTE]: 'general',
+  [ADVANCED_ROUTE]: 'advanced',
+  [SECURITY_ROUTE]: 'securityAndPrivacy',
+  [ABOUT_US_ROUTE]: 'about',
+}
+
+export default class SettingsPage extends PureComponent {
   static propTypes = {
-    addressName: PropTypes.string,
-    backRoute: PropTypes.string,
-    currentPath: PropTypes.string,
+    location: PropTypes.object,
     history: PropTypes.object,
-    isAddressEntryPage: PropTypes.bool,
-    isPopupView: PropTypes.bool,
-    pathnameI18nKey: PropTypes.string,
-    initialBreadCrumbRoute: PropTypes.string,
-    breadCrumbTextKey: PropTypes.string,
-    initialBreadCrumbKey: PropTypes.string,
-    mostRecentOverviewPage: PropTypes.string.isRequired,
+    t: PropTypes.func,
   }
 
   static contextTypes = {
     t: PropTypes.func,
   }
 
+  isCurrentPath (pathname) {
+    return this.props.location.pathname === pathname
+  }
+
   render () {
-    const { history, backRoute, currentPath, mostRecentOverviewPage } = this.props
+    const { t } = this.context
+    const { history, location } = this.props
+
+    const pathnameI18nKey = ROUTES_TO_I18N_KEYS[location.pathname]
+    const isPopupView = getEnvironmentType(location.href) === ENVIRONMENT_TYPE_POPUP
 
     return (
       <div
-        className={classnames('main-container settings-page', {
-          'settings-page--selected': currentPath !== SETTINGS_ROUTE,
+        className={c('main-container settings-page', {
+          'settings-page--selected': !this.isCurrentPath(SETTINGS_ROUTE),
         })}
       >
         <div className="settings-page__header">
           {
-            currentPath !== SETTINGS_ROUTE && currentPath !== NETWORKS_ROUTE && (
+            !this.isCurrentPath(SETTINGS_ROUTE) && (
               <div
                 className="settings-page__back-button"
-                onClick={() => history.push(backRoute)}
+                onClick={() => history.push(SETTINGS_ROUTE)}
               />
             )
           }
-          { this.renderTitle() }
+          <div className="settings-page__header__title">
+            {t(pathnameI18nKey && isPopupView ? pathnameI18nKey : 'settings')}
+          </div>
           <div
             className="settings-page__close-button"
-            onClick={() => history.push(mostRecentOverviewPage)}
+            onClick={() => history.push(DEFAULT_ROUTE)}
           />
         </div>
         <div className="settings-page__content">
@@ -75,7 +75,6 @@ class SettingsPage extends PureComponent {
             { this.renderTabs() }
           </div>
           <div className="settings-page__content__modules">
-            { this.renderSubHeader() }
             { this.renderContent() }
           </div>
         </div>
@@ -83,75 +82,8 @@ class SettingsPage extends PureComponent {
     )
   }
 
-  renderTitle () {
-    const { t } = this.context
-    const { isPopupView, pathnameI18nKey, addressName } = this.props
-
-    let titleText
-
-    if (isPopupView && addressName) {
-      titleText = addressName
-    } else if (pathnameI18nKey && isPopupView) {
-      titleText = t(pathnameI18nKey)
-    } else {
-      titleText = t('settings')
-    }
-
-    return (
-      <div className="settings-page__header__title">
-        {titleText}
-      </div>
-    )
-  }
-
-  renderSubHeader () {
-    const { t } = this.context
-    const {
-      currentPath,
-      isPopupView,
-      isAddressEntryPage,
-      pathnameI18nKey,
-      addressName,
-      initialBreadCrumbRoute,
-      breadCrumbTextKey,
-      history,
-      initialBreadCrumbKey,
-    } = this.props
-
-    let subheaderText
-
-    if (isPopupView && isAddressEntryPage) {
-      subheaderText = t('settings')
-    } else if (initialBreadCrumbKey) {
-      subheaderText = t(initialBreadCrumbKey)
-    } else {
-      subheaderText = t(pathnameI18nKey || 'general')
-    }
-
-    return currentPath !== NETWORKS_ROUTE && (
-      <div className="settings-page__subheader">
-        <div
-          className={classnames({ 'settings-page__subheader--link': initialBreadCrumbRoute })}
-          onClick={() => initialBreadCrumbRoute && history.push(initialBreadCrumbRoute)}
-        >
-          {subheaderText}
-        </div>
-        {breadCrumbTextKey && (
-          <div className="settings-page__subheader--break">
-            <span>{' > '}</span>{t(breadCrumbTextKey)}
-          </div>
-        )}
-        {isAddressEntryPage && (
-          <div className="settings-page__subheader--break">
-            <span>{' > '}</span>{addressName}
-          </div>
-        )}
-      </div>
-    )
-  }
-
   renderTabs () {
-    const { history, currentPath } = this.props
+    const { history, location } = this.props
     const { t } = this.context
 
     return (
@@ -159,19 +91,16 @@ class SettingsPage extends PureComponent {
         tabs={[
           { content: t('general'), description: t('generalSettingsDescription'), key: GENERAL_ROUTE },
           { content: t('advanced'), description: t('advancedSettingsDescription'), key: ADVANCED_ROUTE },
-          { content: t('contacts'), description: t('contactsSettingsDescription'), key: CONTACT_LIST_ROUTE },
           { content: t('securityAndPrivacy'), description: t('securitySettingsDescription'), key: SECURITY_ROUTE },
-          { content: t('alerts'), description: t('alertsSettingsDescription'), key: ALERTS_ROUTE },
-          { content: t('networks'), description: t('networkSettingsDescription'), key: NETWORKS_ROUTE },
           { content: t('about'), description: t('aboutSettingsDescription'), key: ABOUT_US_ROUTE },
         ]}
-        isActive={(key) => {
-          if (key === GENERAL_ROUTE && currentPath === SETTINGS_ROUTE) {
+        isActive={key => {
+          if (key === GENERAL_ROUTE && this.isCurrentPath(SETTINGS_ROUTE)) {
             return true
           }
-          return matchPath(currentPath, { path: key, exact: true })
+          return matchPath(location.pathname, { path: key, exact: true })
         }}
-        onSelect={(key) => history.push(key)}
+        onSelect={key => history.push(key)}
       />
     )
   }
@@ -196,53 +125,8 @@ class SettingsPage extends PureComponent {
         />
         <Route
           exact
-          path={ALERTS_ROUTE}
-          component={AlertsTab}
-        />
-        <Route
-          exact
-          path={NETWORKS_ROUTE}
-          component={NetworksTab}
-        />
-        <Route
-          exact
           path={SECURITY_ROUTE}
           component={SecurityTab}
-        />
-        <Route
-          exact
-          path={CONTACT_LIST_ROUTE}
-          component={ContactListTab}
-        />
-        <Route
-          exact
-          path={CONTACT_ADD_ROUTE}
-          component={ContactListTab}
-        />
-        <Route
-          exact
-          path={CONTACT_MY_ACCOUNTS_ROUTE}
-          component={ContactListTab}
-        />
-        <Route
-          exact
-          path={`${CONTACT_EDIT_ROUTE}/:id`}
-          component={ContactListTab}
-        />
-        <Route
-          exact
-          path={`${CONTACT_VIEW_ROUTE}/:id`}
-          component={ContactListTab}
-        />
-        <Route
-          exact
-          path={`${CONTACT_MY_ACCOUNTS_VIEW_ROUTE}/:id`}
-          component={ContactListTab}
-        />
-        <Route
-          exact
-          path={`${CONTACT_MY_ACCOUNTS_EDIT_ROUTE}/:id`}
-          component={ContactListTab}
         />
         <Route
           component={SettingsTab}
@@ -251,5 +135,3 @@ class SettingsPage extends PureComponent {
     )
   }
 }
-
-export default SettingsPage

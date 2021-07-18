@@ -1,4 +1,4 @@
-import { uniqBy, cloneDeep, flatten } from 'lodash'
+import { clone, uniqBy, flatten } from 'ramda'
 import BigNumber from 'bignumber.js'
 import {
   loadLocalStorageData,
@@ -9,7 +9,7 @@ import {
 } from '../../helpers/utils/conversions.util'
 import {
   isEthereumNetwork,
-} from '../../selectors'
+} from '../../selectors/selectors'
 
 // Actions
 const BASIC_GAS_ESTIMATE_LOADING_FINISHED = 'metamask/gas/BASIC_GAS_ESTIMATE_LOADING_FINISHED'
@@ -28,6 +28,7 @@ const SET_API_ESTIMATES_LAST_RETRIEVED = 'metamask/gas/SET_API_ESTIMATES_LAST_RE
 const SET_BASIC_API_ESTIMATES_LAST_RETRIEVED = 'metamask/gas/SET_BASIC_API_ESTIMATES_LAST_RETRIEVED'
 const SET_BASIC_PRICE_ESTIMATES_LAST_RETRIEVED = 'metamask/gas/SET_BASIC_PRICE_ESTIMATES_LAST_RETRIEVED'
 
+// TODO: determine if this approach to initState is consistent with conventional ducks pattern
 const initState = {
   customData: {
     price: null,
@@ -49,6 +50,7 @@ const initState = {
   basicEstimateIsLoading: true,
   gasEstimatesLoading: true,
   priceAndTimeEstimates: [],
+  basicPriceAndTimeEstimates: [],
   priceAndTimeEstimatesLastRetrieved: 0,
   basicPriceAndTimeEstimatesLastRetrieved: 0,
   basicPriceEstimatesLastRetrieved: 0,
@@ -56,94 +58,96 @@ const initState = {
 }
 
 // Reducer
-export default function reducer (state = initState, action) {
+export default function reducer ({ gas: gasState = initState }, action = {}) {
+  const newState = clone(gasState)
+
   switch (action.type) {
     case BASIC_GAS_ESTIMATE_LOADING_STARTED:
       return {
-        ...state,
+        ...newState,
         basicEstimateIsLoading: true,
       }
     case BASIC_GAS_ESTIMATE_LOADING_FINISHED:
       return {
-        ...state,
+        ...newState,
         basicEstimateIsLoading: false,
       }
     case GAS_ESTIMATE_LOADING_STARTED:
       return {
-        ...state,
+        ...newState,
         gasEstimatesLoading: true,
       }
     case GAS_ESTIMATE_LOADING_FINISHED:
       return {
-        ...state,
+        ...newState,
         gasEstimatesLoading: false,
       }
     case SET_BASIC_GAS_ESTIMATE_DATA:
       return {
-        ...state,
+        ...newState,
         basicEstimates: action.value,
       }
     case SET_CUSTOM_GAS_PRICE:
       return {
-        ...state,
+        ...newState,
         customData: {
-          ...state.customData,
+          ...newState.customData,
           price: action.value,
         },
       }
     case SET_CUSTOM_GAS_LIMIT:
       return {
-        ...state,
+        ...newState,
         customData: {
-          ...state.customData,
+          ...newState.customData,
           limit: action.value,
         },
       }
     case SET_CUSTOM_GAS_TOTAL:
       return {
-        ...state,
+        ...newState,
         customData: {
-          ...state.customData,
+          ...newState.customData,
           total: action.value,
         },
       }
     case SET_PRICE_AND_TIME_ESTIMATES:
       return {
-        ...state,
+        ...newState,
         priceAndTimeEstimates: action.value,
       }
     case SET_CUSTOM_GAS_ERRORS:
       return {
-        ...state,
+        ...newState,
         errors: {
-          ...state.errors,
+          ...newState.errors,
           ...action.value,
         },
       }
     case SET_API_ESTIMATES_LAST_RETRIEVED:
       return {
-        ...state,
+        ...newState,
         priceAndTimeEstimatesLastRetrieved: action.value,
       }
     case SET_BASIC_API_ESTIMATES_LAST_RETRIEVED:
       return {
-        ...state,
+        ...newState,
         basicPriceAndTimeEstimatesLastRetrieved: action.value,
       }
     case SET_BASIC_PRICE_ESTIMATES_LAST_RETRIEVED:
       return {
-        ...state,
+        ...newState,
         basicPriceEstimatesLastRetrieved: action.value,
       }
     case RESET_CUSTOM_DATA:
       return {
-        ...state,
-        customData: cloneDeep(initState.customData),
+        ...newState,
+        customData: clone(initState.customData),
       }
     case RESET_CUSTOM_GAS_STATE:
-      return cloneDeep(initState)
+      return clone(initState)
     default:
-      return state
+      return newState
   }
 }
 
@@ -172,154 +176,135 @@ export function gasEstimatesLoadingFinished () {
   }
 }
 
-async function queryEthGasStationBasic () {
-  const apiKey = process.env.ETH_GAS_STATION_API_KEY ? `?api-key=${process.env.ETH_GAS_STATION_API_KEY}` : ''
-  const url = `https://ethgasstation.info/json/ethgasAPI.json${apiKey}`
-  return await window.fetch(url, {
-    'headers': {},
-    'referrer': 'http://ethgasstation.info/json/',
-    'referrerPolicy': 'no-referrer-when-downgrade',
-    'body': null,
-    'method': 'GET',
-    'mode': 'cors',
-  })
-}
-
-async function queryEthGasStationPredictionTable () {
-  const apiKey = process.env.ETH_GAS_STATION_API_KEY ? `?api-key=${process.env.ETH_GAS_STATION_API_KEY}` : ''
-  const url = `https://ethgasstation.info/json/predictTable.json${apiKey}`
-  return await window.fetch(url, {
-    'headers': {},
-    'referrer': 'http://ethgasstation.info/json/',
-    'referrerPolicy': 'no-referrer-when-downgrade',
-    'body': null,
-    'method': 'GET',
-    'mode': 'cors' },
-  )
-}
-
 export function fetchBasicGasEstimates () {
-  return async (dispatch, getState) => {
-    const { basicPriceEstimatesLastRetrieved } = getState().gas
+  return (dispatch, getState) => {
+    const {
+      basicPriceEstimatesLastRetrieved,
+      basicPriceAndTimeEstimates,
+    } = getState().gas
     const timeLastRetrieved = basicPriceEstimatesLastRetrieved || loadLocalStorageData('BASIC_PRICE_ESTIMATES_LAST_RETRIEVED') || 0
 
     dispatch(basicGasEstimatesLoadingStarted())
 
-    let basicEstimates
-    if (Date.now() - timeLastRetrieved > 75000) {
-      basicEstimates = await fetchExternalBasicGasEstimates(dispatch)
-    } else {
-      const cachedBasicEstimates = loadLocalStorageData('BASIC_PRICE_ESTIMATES')
-      basicEstimates = cachedBasicEstimates || await fetchExternalBasicGasEstimates(dispatch)
-    }
+    const promiseToFetch = Date.now() - timeLastRetrieved > 75000
+    ? fetch('https://dev.blockscale.net/api/gasexpress.json', {
+      'headers': {},
+      'referrer': 'https://dev.blockscale.net/api/',
+      'referrerPolicy': 'no-referrer-when-downgrade',
+      'body': null,
+      'method': 'GET',
+      'mode': 'cors'}
+    )
+      .then(r => r.json())
+      .then(({
+        safeLow,
+        standard: average,
+        fast,
+        fastest,
+        block_time: blockTime,
+        blockNum,
+      }) => {
+        const basicEstimates = {
+          safeLow,
+          average,
+          fast,
+          fastest,
+          blockTime,
+          blockNum,
+        }
 
-    dispatch(setBasicGasEstimateData(basicEstimates))
-    dispatch(basicGasEstimatesLoadingFinished())
+        const timeRetrieved = Date.now()
+        dispatch(setBasicPriceEstimatesLastRetrieved(timeRetrieved))
+        saveLocalStorageData(timeRetrieved, 'BASIC_PRICE_ESTIMATES_LAST_RETRIEVED')
+        saveLocalStorageData(basicEstimates, 'BASIC_PRICE_ESTIMATES')
 
-    return basicEstimates
+        return basicEstimates
+      })
+    : Promise.resolve(basicPriceAndTimeEstimates.length
+        ? basicPriceAndTimeEstimates
+        : loadLocalStorageData('BASIC_PRICE_ESTIMATES')
+      )
+
+    return promiseToFetch.then(basicEstimates => {
+      dispatch(setBasicGasEstimateData(basicEstimates))
+      dispatch(basicGasEstimatesLoadingFinished())
+      return basicEstimates
+    })
   }
-}
-
-async function fetchExternalBasicGasEstimates (dispatch) {
-  const response = await queryEthGasStationBasic()
-
-  const {
-    safeLow: safeLowTimes10,
-    average: averageTimes10,
-    fast: fastTimes10,
-    fastest: fastestTimes10,
-    block_time: blockTime,
-    blockNum,
-  } = await response.json()
-
-  const [average, fast, fastest, safeLow] = [
-    averageTimes10,
-    fastTimes10,
-    fastestTimes10,
-    safeLowTimes10,
-  ].map((price) => (new BigNumber(price)).div(10).toNumber())
-
-  const basicEstimates = {
-    safeLow,
-    average,
-    fast,
-    fastest,
-    blockTime,
-    blockNum,
-  }
-
-  const timeRetrieved = Date.now()
-  saveLocalStorageData(basicEstimates, 'BASIC_PRICE_ESTIMATES')
-  saveLocalStorageData(timeRetrieved, 'BASIC_PRICE_ESTIMATES_LAST_RETRIEVED')
-  dispatch(setBasicPriceEstimatesLastRetrieved(timeRetrieved))
-
-  return basicEstimates
 }
 
 export function fetchBasicGasAndTimeEstimates () {
-  return async (dispatch, getState) => {
-    const { basicPriceAndTimeEstimatesLastRetrieved } = getState().gas
+  return (dispatch, getState) => {
+    const {
+      basicPriceAndTimeEstimatesLastRetrieved,
+      basicPriceAndTimeEstimates,
+    } = getState().gas
     const timeLastRetrieved = basicPriceAndTimeEstimatesLastRetrieved || loadLocalStorageData('BASIC_GAS_AND_TIME_API_ESTIMATES_LAST_RETRIEVED') || 0
 
     dispatch(basicGasEstimatesLoadingStarted())
 
-    let basicEstimates
-    if (Date.now() - timeLastRetrieved > 75000) {
-      basicEstimates = await fetchExternalBasicGasAndTimeEstimates(dispatch)
-    } else {
-      const cachedBasicEstimates = loadLocalStorageData('BASIC_GAS_AND_TIME_API_ESTIMATES')
-      basicEstimates = cachedBasicEstimates || await fetchExternalBasicGasAndTimeEstimates(dispatch)
-    }
+    const promiseToFetch = Date.now() - timeLastRetrieved > 75000
+      ? fetch('https://ethgasstation.info/json/ethgasAPI.json', {
+        'headers': {},
+        'referrer': 'http://ethgasstation.info/json/',
+        'referrerPolicy': 'no-referrer-when-downgrade',
+        'body': null,
+        'method': 'GET',
+        'mode': 'cors'}
+      )
+        .then(r => r.json())
+        .then(({
+          average: averageTimes10,
+          avgWait,
+          block_time: blockTime,
+          blockNum,
+          fast: fastTimes10,
+          fastest: fastestTimes10,
+          fastestWait,
+          fastWait,
+          safeLow: safeLowTimes10,
+          safeLowWait,
+          speed,
+        }) => {
+          const [average, fast, fastest, safeLow] = [
+            averageTimes10,
+            fastTimes10,
+            fastestTimes10,
+            safeLowTimes10,
+          ].map(price => (new BigNumber(price)).div(10).toNumber())
 
-    dispatch(setBasicGasEstimateData(basicEstimates))
-    dispatch(basicGasEstimatesLoadingFinished())
-    return basicEstimates
+          const basicEstimates = {
+            average,
+            avgWait,
+            blockTime,
+            blockNum,
+            fast,
+            fastest,
+            fastestWait,
+            fastWait,
+            safeLow,
+            safeLowWait,
+            speed,
+          }
+
+          const timeRetrieved = Date.now()
+          dispatch(setBasicApiEstimatesLastRetrieved(timeRetrieved))
+          saveLocalStorageData(timeRetrieved, 'BASIC_GAS_AND_TIME_API_ESTIMATES_LAST_RETRIEVED')
+          saveLocalStorageData(basicEstimates, 'BASIC_GAS_AND_TIME_API_ESTIMATES')
+
+          return basicEstimates
+        })
+      : Promise.resolve(basicPriceAndTimeEstimates.length
+          ? basicPriceAndTimeEstimates
+          : loadLocalStorageData('BASIC_GAS_AND_TIME_API_ESTIMATES')
+        )
+
+      return promiseToFetch.then(basicEstimates => {
+        dispatch(setBasicGasEstimateData(basicEstimates))
+        dispatch(basicGasEstimatesLoadingFinished())
+        return basicEstimates
+      })
   }
-}
-
-async function fetchExternalBasicGasAndTimeEstimates (dispatch) {
-  const response = await queryEthGasStationBasic()
-
-  const {
-    average: averageTimes10,
-    avgWait,
-    block_time: blockTime,
-    blockNum,
-    fast: fastTimes10,
-    fastest: fastestTimes10,
-    fastestWait,
-    fastWait,
-    safeLow: safeLowTimes10,
-    safeLowWait,
-    speed,
-  } = await response.json()
-  const [average, fast, fastest, safeLow] = [
-    averageTimes10,
-    fastTimes10,
-    fastestTimes10,
-    safeLowTimes10,
-  ].map((price) => (new BigNumber(price)).div(10).toNumber())
-
-  const basicEstimates = {
-    average,
-    avgWait,
-    blockTime,
-    blockNum,
-    fast,
-    fastest,
-    fastestWait,
-    fastWait,
-    safeLow,
-    safeLowWait,
-    speed,
-  }
-
-  const timeRetrieved = Date.now()
-  saveLocalStorageData(basicEstimates, 'BASIC_GAS_AND_TIME_API_ESTIMATES')
-  saveLocalStorageData(timeRetrieved, 'BASIC_GAS_AND_TIME_API_ESTIMATES_LAST_RETRIEVED')
-  dispatch(setBasicApiEstimatesLastRetrieved(timeRetrieved))
-
-  return basicEstimates
 }
 
 function extrapolateY ({ higherY, lowerY, higherX, lowerX, xForExtrapolation }) {
@@ -362,11 +347,11 @@ function quartiles (data) {
 }
 
 function inliersByIQR (data, prop) {
-  const { lowerQuartile, upperQuartile } = quartiles(data.map((d) => (prop ? d[prop] : d)))
+  const { lowerQuartile, upperQuartile } = quartiles(data.map(d => prop ? d[prop] : d))
   const IQR = upperQuartile - lowerQuartile
-  const lowerBound = lowerQuartile - (1.5 * IQR)
-  const upperBound = upperQuartile + (1.5 * IQR)
-  return data.filter((d) => {
+  const lowerBound = lowerQuartile - 1.5 * IQR
+  const upperBound = upperQuartile + 1.5 * IQR
+  return data.filter(d => {
     const value = prop ? d[prop] : d
     return value >= lowerBound && value <= upperBound
   })
@@ -389,11 +374,18 @@ export function fetchGasEstimates (blockTime) {
     dispatch(gasEstimatesLoadingStarted())
 
     const promiseToFetch = Date.now() - timeLastRetrieved > 75000
-      ? queryEthGasStationPredictionTable()
-        .then((r) => r.json())
-        .then((r) => {
+      ? fetch('https://ethgasstation.info/json/predictTable.json', {
+          'headers': {},
+          'referrer': 'http://ethgasstation.info/json/',
+          'referrerPolicy': 'no-referrer-when-downgrade',
+          'body': null,
+          'method': 'GET',
+          'mode': 'cors'}
+        )
+        .then(r => r.json())
+        .then(r => {
           const estimatedPricesAndTimes = r.map(({ expectedTime, expectedWait, gasprice }) => ({ expectedTime, expectedWait, gasprice }))
-          const estimatedTimeWithUniquePrices = uniqBy(estimatedPricesAndTimes, ({ expectedTime }) => expectedTime)
+          const estimatedTimeWithUniquePrices = uniqBy(({ expectedTime }) => expectedTime, estimatedPricesAndTimes)
 
           const withSupplementalTimeEstimates = flatten(estimatedTimeWithUniquePrices.map(({ expectedWait, gasprice }, i, arr) => {
             const next = arr[i + 1]
@@ -440,14 +432,14 @@ export function fetchGasEstimates (blockTime) {
           return timeMappedToSeconds
         })
       : Promise.resolve(priceAndTimeEstimates.length
-        ? priceAndTimeEstimates
-        : loadLocalStorageData('GAS_API_ESTIMATES'),
-      )
+          ? priceAndTimeEstimates
+          : loadLocalStorageData('GAS_API_ESTIMATES')
+        )
 
-    return promiseToFetch.then((estimates) => {
-      dispatch(setPricesAndTimeEstimates(estimates))
-      dispatch(gasEstimatesLoadingFinished())
-    })
+      return promiseToFetch.then(estimates => {
+        dispatch(setPricesAndTimeEstimates(estimates))
+        dispatch(gasEstimatesLoadingFinished())
+      })
   }
 }
 

@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import classnames from 'classnames'
-import { removeLeadingZeroes } from '../../../pages/send/send.utils'
+import { removeLeadingZeroes } from '../../app/send/send.utils'
 
 /**
  * Component that attaches a suffix or unit of measurement trailing user input, ex. 'ETH'. Also
@@ -13,7 +13,7 @@ export default class UnitInput extends PureComponent {
     children: PropTypes.node,
     actionComponent: PropTypes.node,
     error: PropTypes.bool,
-    maxModeOn: PropTypes.bool,
+    onBlur: PropTypes.func,
     onChange: PropTypes.func,
     placeholder: PropTypes.string,
     suffix: PropTypes.string,
@@ -21,12 +21,15 @@ export default class UnitInput extends PureComponent {
   }
 
   static defaultProps = {
-    value: '',
     placeholder: '0',
   }
 
-  state = {
-    value: this.props.value,
+  constructor (props) {
+    super(props)
+
+    this.state = {
+      value: props.value || '',
+    }
   }
 
   componentDidUpdate (prevProps) {
@@ -43,7 +46,7 @@ export default class UnitInput extends PureComponent {
     this.unitInput.focus()
   }
 
-  handleChange = (event) => {
+  handleChange = event => {
     const { value: userInput } = event.target
     let value = userInput
 
@@ -55,6 +58,11 @@ export default class UnitInput extends PureComponent {
     this.props.onChange(value)
   }
 
+  handleBlur = event => {
+    const { onBlur } = this.props
+    typeof onBlur === 'function' && onBlur(this.state.value)
+  }
+
   getInputWidth (value) {
     const valueString = String(value)
     const valueLength = valueString.length || 1
@@ -63,28 +71,25 @@ export default class UnitInput extends PureComponent {
   }
 
   render () {
-    const { error, placeholder, suffix, actionComponent, children, maxModeOn } = this.props
+    const { error, placeholder, suffix, actionComponent, children } = this.props
     const { value } = this.state
 
     return (
       <div
-        className={classnames('unit-input', { 'unit-input--error': error }, { 'unit-input__disabled': maxModeOn })}
-        onClick={maxModeOn ? null : this.handleFocus}
+        className={classnames('unit-input', { 'unit-input--error': error })}
+        onClick={this.handleFocus}
       >
         <div className="unit-input__inputs">
           <div className="unit-input__input-container">
             <input
               type="number"
-              dir="ltr"
-              className={classnames('unit-input__input', { 'unit-input__disabled': maxModeOn })}
+              className="unit-input__input"
               value={value}
               placeholder={placeholder}
               onChange={this.handleChange}
+              onBlur={this.handleBlur}
               style={{ width: this.getInputWidth(value) }}
-              ref={(ref) => {
-                this.unitInput = ref
-              }}
-              disabled={maxModeOn}
+              ref={ref => { this.unitInput = ref }}
             />
             {
               suffix && (

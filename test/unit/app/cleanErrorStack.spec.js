@@ -1,7 +1,7 @@
-import assert from 'assert'
-import cleanErrorStack from '../../../app/scripts/lib/cleanErrorStack'
+const assert = require('assert')
+const cleanErrorStack = require('../../../app/scripts/lib/cleanErrorStack')
 
-describe('Clean Error Stack', function () {
+describe('Clean Error Stack', () => {
 
   const testMessage = 'Test Message'
   const testError = new Error(testMessage)
@@ -9,24 +9,24 @@ describe('Clean Error Stack', function () {
   const blankErrorName = new Error(testMessage)
   const blankMsgError = new Error()
 
-  beforeEach(function () {
+  beforeEach(() => {
     undefinedErrorName.name = undefined
     blankErrorName.name = ''
   })
 
-  it('tests error with message', function () {
+  it('tests error with message', () => {
     assert.equal(cleanErrorStack(testError), 'Error: Test Message')
   })
 
-  it('tests error with undefined name', function () {
+  it('tests error with undefined name', () => {
     assert.equal(cleanErrorStack(undefinedErrorName).toString(), 'Error: Test Message')
   })
 
-  it('tests error with blank name', function () {
+  it('tests error with blank name', () => {
     assert.equal(cleanErrorStack(blankErrorName).toString(), 'Test Message')
   })
 
-  it('tests error with blank message', function () {
+  it('tests error with blank message', () => {
     assert.equal(cleanErrorStack(blankMsgError), 'Error')
   })
 

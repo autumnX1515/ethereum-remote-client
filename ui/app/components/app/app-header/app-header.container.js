@@ -1,11 +1,11 @@
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
-import { compose } from 'redux'
+import { compose } from 'recompose'
 
 import AppHeader from './app-header.component'
-import * as actions from '../../../store/actions'
+const actions = require('../../../store/actions')
 
-const mapStateToProps = (state) => {
+const mapStateToProps = state => {
   const { appState, metamask } = state
   const { networkDropdownOpen } = appState
   const {
@@ -26,7 +26,7 @@ const mapStateToProps = (state) => {
   }
 }
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
   return {
     showNetworkDropdown: () => dispatch(actions.showNetworkDropdown()),
     hideNetworkDropdown: () => dispatch(actions.hideNetworkDropdown()),
@@ -36,5 +36,5 @@ const mapDispatchToProps = (dispatch) => {
 
 export default compose(
   withRouter,
-  connect(mapStateToProps, mapDispatchToProps),
+  connect(mapStateToProps, mapDispatchToProps)
 )(AppHeader)
