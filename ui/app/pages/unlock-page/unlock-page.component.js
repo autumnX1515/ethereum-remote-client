@@ -2,9 +2,6 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import Button from '@material-ui/core/Button'
 import TextField from '../../components/ui/text-field'
-import getCaretCoordinates from 'textarea-caret'
-import { EventEmitter } from 'events'
-import Mascot from '../../components/ui/mascot'
 import { DEFAULT_ROUTE } from '../../helpers/constants/routes'
 
 export default class UnlockPage extends Component {
@@ -14,28 +11,28 @@ export default class UnlockPage extends Component {
   }
 
   static propTypes = {
-    history: PropTypes.object,
+    history: PropTypes.object.isRequired,
     isUnlocked: PropTypes.bool,
     onImport: PropTypes.func,
     onRestore: PropTypes.func,
     onSubmit: PropTypes.func,
     forceUpdateMetamaskState: PropTypes.func,
     showOptInModal: PropTypes.func,
+    isNotification: PropTypes.bool,
+    rejectAllPermissionsRequests: PropTypes.func,
+    isInitialized: PropTypes.bool,
+    completedOnboarding: PropTypes.bool,
+    setCompletedOnboarding: PropTypes.func,
   }
 
-  constructor (props) {
-    super(props)
-
-    this.state = {
-      password: '',
-      error: null,
-    }
-
-    this.submitting = false
-    this.animationEventEmitter = new EventEmitter()
+  state = {
+    password: '',
+    error: null,
   }
 
-  componentWillMount () {
+  submitting = false
+
+  UNSAFE_componentWillMount () {
     const { isUnlocked, history } = this.props
 
     if (isUnlocked) {
@@ -43,12 +40,46 @@ export default class UnlockPage extends Component {
     }
   }
 
-  handleSubmit = async event => {
+  componentDidMount () {
+    const {
+      isInitialized,
+      isNotification,
+      completedOnboarding,
+      setCompletedOnboarding,
+    } = this.props
+
+    if (isInitialized && !completedOnboarding) {
+      setCompletedOnboarding()
+    }
+
+    if (isNotification) {
+      window.addEventListener('beforeunload', this.beforeUnload)
+    }
+  }
+
+  beforeUnload = () => {
+    const {
+      isUnlocked,
+      rejectAllPermissionsRequests,
+    } = this.props
+
+    // We only want to reject requests in the event that
+    // a user closes the popup without unlocking.
+    if (!isUnlocked) {
+      rejectAllPermissionsRequests()
+    }
+  }
+
+  removeBeforeUnload = () => {
+    window.removeEventListener('beforeunload', this.beforeUnload)
+  }
+
+  handleSubmit = async (event) => {
     event.preventDefault()
     event.stopPropagation()
 
     const { password } = this.state
-    const { onSubmit, forceUpdateMetamaskState, showOptInModal } = this.props
+    const { onSubmit, forceUpdateMetamaskState, isNotification, showOptInModal } = this.props
 
     if (password === '' || this.submitting) {
       return
@@ -72,6 +103,10 @@ export default class UnlockPage extends Component {
       if (newState.participateInMetaMetrics === null || newState.participateInMetaMetrics === undefined) {
         showOptInModal()
       }
+
+      if (isNotification) {
+        this.removeBeforeUnload()
+      }
     } catch ({ message }) {
       if (message === 'Incorrect password') {
         const newState = await forceUpdateMetamaskState()
@@ -79,7 +114,7 @@ export default class UnlockPage extends Component {
           eventOpts: {
             category: 'Navigation',
             action: 'Unlock',
-            name: 'Incorrect Passowrd',
+            name: 'Incorrect Password',
           },
           customVariables: {
             numberOfTokens: newState.tokens.length,
@@ -95,15 +130,6 @@ export default class UnlockPage extends Component {
 
   handleInputChange ({ target }) {
     this.setState({ password: target.value, error: null })
-
-    // tell mascot to look at page action
-    const element = target
-    const boundingRect = element.getBoundingClientRect()
-    const coordinates = getCaretCoordinates(element, element.selectionEnd)
-    this.animationEventEmitter.emit('point', {
-      x: boundingRect.left + coordinates.left - element.scrollLeft,
-      y: boundingRect.top + coordinates.top - element.scrollTop,
-    })
   }
 
   renderSubmitButton () {
@@ -123,12 +149,12 @@ export default class UnlockPage extends Component {
         style={style}
         disabled={!this.state.password}
         fullWidth
-        variant="raised"
+        variant="contained"
         size="large"
         onClick={this.handleSubmit}
         disableRipple
       >
-        { this.context.t('login') }
+        { this.context.t('unlock') }
       </Button>
     )
   }
@@ -141,13 +167,6 @@ export default class UnlockPage extends Component {
     return (
       <div className="unlock-page__container">
         <div className="unlock-page">
-          <div className="unlock-page__mascot-container">
-            <Mascot
-              animationEventEmitter={this.animationEventEmitter}
-              width="120"
-              height="120"
-            />
-          </div>
           <h1 className="unlock-page__title">
             { t('welcomeBack') }
           </h1>
@@ -161,11 +180,11 @@ export default class UnlockPage extends Component {
               label={t('password')}
               type="password"
               value={password}
-              onChange={event => this.handleInputChange(event)}
+              onChange={(event) => this.handleInputChange(event)}
               error={error}
               autoFocus
               autoComplete="current-password"
-              material
+              theme="material"
               fullWidth
             />
           </form>

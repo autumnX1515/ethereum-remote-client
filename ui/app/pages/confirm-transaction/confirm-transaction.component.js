@@ -8,10 +8,12 @@ import ConfirmSendEther from '../confirm-send-ether'
 import ConfirmSendToken from '../confirm-send-token'
 import ConfirmDeployContract from '../confirm-deploy-contract'
 import ConfirmApprove from '../confirm-approve'
-import ConfirmTokenTransactionBase from '../confirm-token-transaction-base'
+import ConfirmTokenTransactionBaseContainer from '../confirm-token-transaction-base'
 import ConfTx from './conf-tx'
+import ConfirmDecryptMessage from '../confirm-decrypt-message'
+import ConfirmEncryptionPublicKey from '../confirm-encryption-public-key'
+
 import {
-  DEFAULT_ROUTE,
   CONFIRM_TRANSACTION_ROUTE,
   CONFIRM_DEPLOY_CONTRACT_PATH,
   CONFIRM_SEND_ETHER_PATH,
@@ -20,24 +22,29 @@ import {
   CONFIRM_TRANSFER_FROM_PATH,
   CONFIRM_TOKEN_METHOD_PATH,
   SIGNATURE_REQUEST_PATH,
+  DECRYPT_MESSAGE_REQUEST_PATH,
+  ENCRYPTION_PUBLIC_KEY_REQUEST_PATH,
 } from '../../helpers/constants/routes'
 
 export default class ConfirmTransaction extends Component {
+  static contextTypes = {
+    metricsEvent: PropTypes.func,
+  }
+
   static propTypes = {
     history: PropTypes.object.isRequired,
     totalUnapprovedCount: PropTypes.number.isRequired,
-    match: PropTypes.object,
     send: PropTypes.object,
-    unconfirmedTransactions: PropTypes.array,
     setTransactionToConfirm: PropTypes.func,
-    confirmTransaction: PropTypes.object,
     clearConfirmTransaction: PropTypes.func,
     fetchBasicGasAndTimeEstimates: PropTypes.func,
-  }
-
-  getParamsTransactionId () {
-    const { match: { params: { id } = {} } } = this.props
-    return id || null
+    mostRecentOverviewPage: PropTypes.string.isRequired,
+    transaction: PropTypes.object,
+    getContractMethodData: PropTypes.func,
+    transactionId: PropTypes.string,
+    paramsTransactionId: PropTypes.string,
+    getTokenParams: PropTypes.func,
+    isTokenMethodAction: PropTypes.bool,
   }
 
   componentDidMount () {
@@ -45,76 +52,65 @@ export default class ConfirmTransaction extends Component {
       totalUnapprovedCount = 0,
       send = {},
       history,
-      confirmTransaction: { txData: { id: transactionId } = {} },
+      mostRecentOverviewPage,
+      transaction: { txParams: { data, to } = {} } = {},
       fetchBasicGasAndTimeEstimates,
+      getContractMethodData,
+      transactionId,
+      paramsTransactionId,
+      getTokenParams,
+      isTokenMethodAction,
     } = this.props
 
     if (!totalUnapprovedCount && !send.to) {
-      history.replace(DEFAULT_ROUTE)
+      history.replace(mostRecentOverviewPage)
       return
     }
 
-    if (!transactionId) {
-      fetchBasicGasAndTimeEstimates()
-      this.setTransactionToConfirm()
+    fetchBasicGasAndTimeEstimates()
+    getContractMethodData(data)
+    if (isTokenMethodAction) {
+      getTokenParams(to)
+    }
+    const txId = transactionId || paramsTransactionId
+    if (txId) {
+      this.props.setTransactionToConfirm(txId)
     }
   }
 
-  componentDidUpdate () {
+  componentDidUpdate (prevProps) {
     const {
       setTransactionToConfirm,
-      confirmTransaction: { txData: { id: transactionId } = {} },
+      transaction: { txData: { txParams: { data } = {} } = {} },
       clearConfirmTransaction,
+      getContractMethodData,
+      paramsTransactionId,
+      transactionId,
+      history,
+      mostRecentOverviewPage,
+      totalUnapprovedCount,
     } = this.props
-    const paramsTransactionId = this.getParamsTransactionId()
 
-    if (paramsTransactionId && transactionId && paramsTransactionId !== transactionId + '') {
+    if (paramsTransactionId && transactionId && prevProps.paramsTransactionId !== paramsTransactionId) {
       clearConfirmTransaction()
+      getContractMethodData(data)
       setTransactionToConfirm(paramsTransactionId)
       return
-    }
-
-    if (!transactionId) {
-      this.setTransactionToConfirm()
-    }
-  }
-
-  setTransactionToConfirm () {
-    const {
-      history,
-      unconfirmedTransactions,
-      setTransactionToConfirm,
-    } = this.props
-    const paramsTransactionId = this.getParamsTransactionId()
-
-    if (paramsTransactionId) {
-      // Check to make sure params ID is valid
-      const tx = unconfirmedTransactions.find(({ id }) => id + '' === paramsTransactionId)
-
-      if (!tx) {
-        history.replace(DEFAULT_ROUTE)
-      } else {
-        setTransactionToConfirm(paramsTransactionId)
-      }
-    } else if (unconfirmedTransactions.length) {
-      const totalUnconfirmed = unconfirmedTransactions.length
-      const transaction = unconfirmedTransactions[totalUnconfirmed - 1]
-      const { id: transactionId, loadingDefaults } = transaction
-
-      if (!loadingDefaults) {
-        setTransactionToConfirm(transactionId)
-      }
+    } else if (prevProps.transactionId && !transactionId && !totalUnapprovedCount) {
+      history.replace(mostRecentOverviewPage)
+      return
+    } else if (prevProps.transactionId && transactionId && prevProps.transactionId !== transactionId) {
+      history.replace(mostRecentOverviewPage)
+      return
     }
   }
 
   render () {
-    const { confirmTransaction: { txData: { id } } = {} } = this.props
-    const paramsTransactionId = this.getParamsTransactionId()
-
+    const { transactionId, paramsTransactionId } = this.props
     // Show routes when state.confirmTransaction has been set and when either the ID in the params
     // isn't specified or is specified and matches the ID in state.confirmTransaction in order to
     // support URLs of /confirm-transaction or /confirm-transaction/<transactionId>
-    return id && (!paramsTransactionId || paramsTransactionId === id + '')
+    return transactionId && (!paramsTransactionId || paramsTransactionId === transactionId)
       ? (
         <Switch>
           <Route
@@ -145,12 +141,22 @@ export default class ConfirmTransaction extends Component {
           <Route
             exact
             path={`${CONFIRM_TRANSACTION_ROUTE}/:id?${CONFIRM_TRANSFER_FROM_PATH}`}
-            component={ConfirmTokenTransactionBase}
+            component={ConfirmTokenTransactionBaseContainer}
           />
           <Route
             exact
             path={`${CONFIRM_TRANSACTION_ROUTE}/:id?${SIGNATURE_REQUEST_PATH}`}
             component={ConfTx}
+          />
+          <Route
+            exact
+            path={`${CONFIRM_TRANSACTION_ROUTE}/:id?${DECRYPT_MESSAGE_REQUEST_PATH}`}
+            component={ConfirmDecryptMessage}
+          />
+          <Route
+            exact
+            path={`${CONFIRM_TRANSACTION_ROUTE}/:id?${ENCRYPTION_PUBLIC_KEY_REQUEST_PATH}`}
+            component={ConfirmEncryptionPublicKey}
           />
           <Route path="*" component={ConfirmTransactionSwitch} />
         </Switch>

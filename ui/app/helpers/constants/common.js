@@ -10,4 +10,11 @@ export const NETWORK_TYPES = {
   MAINNET: 'mainnet',
   RINKEBY: 'rinkeby',
   ROPSTEN: 'ropsten',
+  GOERLI: 'goerli',
+}
+
+export const GAS_ESTIMATE_TYPES = {
+  SLOW: 'SLOW',
+  AVERAGE: 'AVERAGE',
+  FAST: 'FAST',
 }

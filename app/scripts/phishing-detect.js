@@ -1,25 +1,23 @@
-const querystring = require('querystring')
-const dnode = require('dnode')
-const { EventEmitter } = require('events')
-const PortStream = require('extension-port-stream')
-const extension = require('extensionizer')
-const {setupMultiplex} = require('./lib/stream-utils.js')
-const { getEnvironmentType } = require('./lib/util')
-const ExtensionPlatform = require('./platforms/extension')
+import querystring from 'querystring'
+import dnode from 'dnode'
+import { EventEmitter } from 'events'
+import PortStream from 'extension-port-stream'
+import extension from 'extensionizer'
+import { setupMultiplex } from './lib/stream-utils.js'
+import { getEnvironmentType } from './lib/util'
+import ExtensionPlatform from './platforms/extension'
 
 document.addEventListener('DOMContentLoaded', start)
 
 function start () {
-  const windowType = getEnvironmentType(window.location.href)
   const hash = window.location.hash.substring(1)
   const suspect = querystring.parse(hash)
 
-  document.getElementById('esdbLink').href = `https://etherscamdb.info/domain/${suspect.hostname}`
+  document.getElementById('csdbLink').href = `https://cryptoscamdb.org/search`
 
   global.platform = new ExtensionPlatform()
-  global.METAMASK_UI_TYPE = windowType
 
-  const extensionPort = extension.runtime.connect({ name: windowType })
+  const extensionPort = extension.runtime.connect({ name: getEnvironmentType() })
   const connectionStream = new PortStream(extensionPort)
   const mx = setupMultiplex(connectionStream)
   setupControllerConnection(mx.createStream('controller'), (err, metaMaskController) => {
@@ -29,7 +27,7 @@ function start () {
 
     const continueLink = document.getElementById('unsafe-continue')
     continueLink.addEventListener('click', () => {
-      metaMaskController.whitelistPhishingDomain(suspect.hostname)
+      metaMaskController.safelistPhishingDomain(suspect.hostname)
       window.location.href = suspect.href
     })
   })
@@ -37,11 +35,11 @@ function start () {
 
 function setupControllerConnection (connectionStream, cb) {
   const eventEmitter = new EventEmitter()
-  const accountManagerDnode = dnode({
+  const metaMaskControllerDnode = dnode({
     sendUpdate (state) {
       eventEmitter.emit('update', state)
     },
   })
-  connectionStream.pipe(accountManagerDnode).pipe(connectionStream)
-  accountManagerDnode.once('remote', (accountManager) => cb(null, accountManager))
+  connectionStream.pipe(metaMaskControllerDnode).pipe(connectionStream)
+  metaMaskControllerDnode.once('remote', (backgroundConnection) => cb(null, backgroundConnection))
 }

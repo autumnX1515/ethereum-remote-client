@@ -2,8 +2,12 @@ import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import classnames from 'classnames'
 import Identicon from '../../ui/identicon'
+import MetaFoxLogo from '../../ui/metafox-logo'
 import { DEFAULT_ROUTE } from '../../../helpers/constants/routes'
-const NetworkIndicator = require('../network')
+import NetworkIndicator from '../network'
+import SelectedProviderIndicator from '../selected-provider-indicator'
+import { getEnvironmentType } from '../../../../../app/scripts/lib/util'
+import { ENVIRONMENT_TYPE_POPUP } from '../../../../../app/scripts/lib/enums'
 
 export default class AppHeader extends PureComponent {
   static propTypes = {
@@ -70,6 +74,7 @@ export default class AppHeader extends PureComponent {
         <Identicon
           address={selectedAddress}
           diameter={32}
+          addBorder
         />
       </div>
     )
@@ -84,27 +89,18 @@ export default class AppHeader extends PureComponent {
       hideNetworkIndicator,
       disabled,
     } = this.props
+    const showProviderIndicator = getEnvironmentType() === ENVIRONMENT_TYPE_POPUP
 
     return (
       <div
-        className={classnames('app-header', { 'app-header--back-drop': isUnlocked })}>
+        className={classnames('app-header', { 'app-header--back-drop': isUnlocked })}
+      >
+        {showProviderIndicator && <SelectedProviderIndicator isUnlocked={isUnlocked} />}
         <div className="app-header__contents">
-          <div
-            className="app-header__logo-container"
+          <MetaFoxLogo
+            unsetIconHeight
             onClick={() => history.push(DEFAULT_ROUTE)}
-          >
-            <img
-              className="app-header__metafox-logo app-header__metafox-logo--horizontal"
-              src="/images/logo/metamask-logo-horizontal.svg"
-              height={30}
-            />
-            <img
-              className="app-header__metafox-logo app-header__metafox-logo--icon"
-              src="/images/logo/metamask-fox.svg"
-              height={42}
-              width={42}
-            />
-          </div>
+          />
           <div className="app-header__account-menu-container">
             {
               !hideNetworkIndicator && (
@@ -112,7 +108,7 @@ export default class AppHeader extends PureComponent {
                   <NetworkIndicator
                     network={network}
                     provider={provider}
-                    onClick={event => this.handleNetworkIndicatorClick(event)}
+                    onClick={(event) => this.handleNetworkIndicatorClick(event)}
                     disabled={disabled}
                   />
                 </div>

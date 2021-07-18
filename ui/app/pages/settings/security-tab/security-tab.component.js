@@ -1,7 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import { exportAsFile } from '../../../helpers/utils/util'
-import ToggleButton from 'react-toggle-button'
+import ToggleButton from '../../../components/ui/toggle-button'
 import { REVEAL_SEED_ROUTE } from '../../../helpers/constants/routes'
 import Button from '../../../components/ui/button'
 
@@ -12,81 +11,14 @@ export default class SecurityTab extends PureComponent {
   }
 
   static propTypes = {
-    setPrivacyMode: PropTypes.func,
-    privacyMode: PropTypes.bool,
-    displayWarning: PropTypes.func,
-    revealSeedConfirmation: PropTypes.func,
-    showClearApprovalModal: PropTypes.func,
     warning: PropTypes.string,
     history: PropTypes.object,
-    mobileSync: PropTypes.bool,
     participateInMetaMetrics: PropTypes.bool,
-    setParticipateInMetaMetrics: PropTypes.func,
-  }
-
-  renderStateLogs () {
-    const { t } = this.context
-    const { displayWarning } = this.props
-
-    return (
-      <div className="settings-page__content-row">
-        <div className="settings-page__content-item">
-          <span>{ t('stateLogs') }</span>
-          <span className="settings-page__content-description">
-            { t('stateLogsDescription') }
-          </span>
-        </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <Button
-              type="primary"
-              large
-              onClick={() => {
-                window.logStateString((err, result) => {
-                  if (err) {
-                    displayWarning(t('stateLogError'))
-                  } else {
-                    exportAsFile('MetaMask State Logs.json', result)
-                  }
-                })
-              }}
-            >
-              { t('downloadStateLogs') }
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  renderClearApproval () {
-    const { t } = this.context
-    const { showClearApprovalModal } = this.props
-    return (
-      <div className="settings-page__content-row">
-        <div className="settings-page__content-item">
-          <span>{ t('approvalData') }</span>
-          <span className="settings-page__content-description">
-            { t('approvalDataDescription') }
-          </span>
-        </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <Button
-              type="secondary"
-              large
-              className="settings-tab__button--orange"
-              onClick={event => {
-                event.preventDefault()
-                showClearApprovalModal()
-              }}
-            >
-              { t('clearApprovalData') }
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
+    setParticipateInMetaMetrics: PropTypes.func.isRequired,
+    showIncomingTransactions: PropTypes.bool.isRequired,
+    setShowIncomingTransactionsFeatureFlag: PropTypes.func.isRequired,
+    setUsePhishDetect: PropTypes.func.isRequired,
+    usePhishDetect: PropTypes.bool.isRequired,
   }
 
   renderSeedWords () {
@@ -101,9 +33,9 @@ export default class SecurityTab extends PureComponent {
         <div className="settings-page__content-item">
           <div className="settings-page__content-item-col">
             <Button
-              type="secondary"
+              type="danger"
               large
-              onClick={event => {
+              onClick={(event) => {
                 event.preventDefault()
                 this.context.metricsEvent({
                   eventOpts: {
@@ -123,33 +55,7 @@ export default class SecurityTab extends PureComponent {
     )
   }
 
-  renderPrivacyOptIn () {
-    const { t } = this.context
-    const { privacyMode, setPrivacyMode } = this.props
-
-    return (
-      <div className="settings-page__content-row">
-        <div className="settings-page__content-item">
-          <span>{ t('privacyMode') }</span>
-          <div className="settings-page__content-description">
-            { t('privacyModeDescription') }
-          </div>
-        </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              value={privacyMode}
-              onToggle={value => setPrivacyMode(!value)}
-              activeLabel=""
-              inactiveLabel=""
-            />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  renderMetaMetricsOptIn () {
+  _renderMetaMetricsOptIn () {
     const { t } = this.context
     const { participateInMetaMetrics, setParticipateInMetaMetrics } = this.props
 
@@ -165,9 +71,9 @@ export default class SecurityTab extends PureComponent {
           <div className="settings-page__content-item-col">
             <ToggleButton
               value={participateInMetaMetrics}
-              onToggle={value => setParticipateInMetaMetrics(!value)}
-              activeLabel=""
-              inactiveLabel=""
+              onToggle={(value) => setParticipateInMetaMetrics(!value)}
+              offLabel={t('off')}
+              onLabel={t('on')}
             />
           </div>
         </div>
@@ -175,21 +81,73 @@ export default class SecurityTab extends PureComponent {
     )
   }
 
-  renderContent () {
-    const { warning } = this.props
+  renderMetaMetricsOptIn () {
+    return null
+  }
+
+  renderIncomingTransactionsOptIn () {
+    const { t } = this.context
+    const { showIncomingTransactions, setShowIncomingTransactionsFeatureFlag } = this.props
 
     return (
-      <div className="settings-page__body">
-        { warning && <div className="settings-tab__error">{ warning }</div> }
-        { this.renderPrivacyOptIn() }
-        { this.renderClearApproval() }
-        { this.renderSeedWords() }
-        { this.renderMetaMetricsOptIn() }
+      <div className="settings-page__content-row">
+        <div className="settings-page__content-item">
+          <span>{ t('showIncomingTransactions') }</span>
+          <div className="settings-page__content-description">
+            { t('showIncomingTransactionsDescription') }
+          </div>
+        </div>
+        <div className="settings-page__content-item">
+          <div className="settings-page__content-item-col">
+            <ToggleButton
+              value={showIncomingTransactions}
+              onToggle={(value) => setShowIncomingTransactionsFeatureFlag(!value)}
+              offLabel={t('off')}
+              onLabel={t('on')}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  renderPhishingDetectionToggle () {
+    const { t } = this.context
+    const { usePhishDetect, setUsePhishDetect } = this.props
+
+    return (
+      <div className="settings-page__content-row">
+        <div className="settings-page__content-item">
+          <span>{ t('usePhishingDetection') }</span>
+          <div className="settings-page__content-description">
+            { t('usePhishingDetectionDescription') }
+          </div>
+        </div>
+        <div className="settings-page__content-item">
+          <div className="settings-page__content-item-col">
+            <ToggleButton
+              value={usePhishDetect}
+              onToggle={(value) => setUsePhishDetect(!value)}
+              offLabel={t('off')}
+              onLabel={t('on')}
+            />
+          </div>
+        </div>
       </div>
     )
   }
 
   render () {
-    return this.renderContent()
+    const { warning } = this.props
+
+    return (
+      <div className="settings-page__body">
+        { warning && <div className="settings-tab__error">{ warning }</div> }
+        { this.renderSeedWords() }
+        { this.renderIncomingTransactionsOptIn() }
+        { this.renderPhishingDetectionToggle() }
+        { this.renderMetaMetricsOptIn() }
+      </div>
+    )
   }
 }

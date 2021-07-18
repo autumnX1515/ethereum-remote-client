@@ -3,10 +3,10 @@ import PropTypes from 'prop-types'
 import Button from '../../../../components/ui/button'
 import {
   INITIALIZE_SEED_PHRASE_ROUTE,
-  INITIALIZE_IMPORT_WITH_SEED_PHRASE_ROUTE,
   INITIALIZE_SELECT_ACTION_ROUTE,
 } from '../../../../helpers/constants/routes'
 import TextField from '../../../../components/ui/text-field'
+import PasswordWarning from '../../../../components/app/password-warning'
 
 export default class NewAccount extends PureComponent {
   static contextTypes = {
@@ -24,7 +24,7 @@ export default class NewAccount extends PureComponent {
     confirmPassword: '',
     passwordError: '',
     confirmPasswordError: '',
-    termsChecked: false,
+    termsChecked: true,
   }
 
   isValid () {
@@ -49,7 +49,7 @@ export default class NewAccount extends PureComponent {
   handlePasswordChange (password) {
     const { t } = this.context
 
-    this.setState(state => {
+    this.setState((state) => {
       const { confirmPassword } = state
       let passwordError = ''
       let confirmPasswordError = ''
@@ -73,7 +73,7 @@ export default class NewAccount extends PureComponent {
   handleConfirmPasswordChange (confirmPassword) {
     const { t } = this.context
 
-    this.setState(state => {
+    this.setState((state) => {
       const { password } = state
       let confirmPasswordError = ''
 
@@ -88,7 +88,7 @@ export default class NewAccount extends PureComponent {
     })
   }
 
-  handleCreate = async event => {
+  handleCreate = async (event) => {
     event.preventDefault()
 
     if (!this.isValid()) {
@@ -115,13 +115,6 @@ export default class NewAccount extends PureComponent {
     }
   }
 
-  handleImportWithSeedPhrase = event => {
-    const { history } = this.props
-
-    event.preventDefault()
-    history.push(INITIALIZE_IMPORT_WITH_SEED_PHRASE_ROUTE)
-  }
-
   toggleTermsCheck = () => {
     this.context.metricsEvent({
       eventOpts: {
@@ -136,6 +129,12 @@ export default class NewAccount extends PureComponent {
     }))
   }
 
+  onTermsKeyPress = ({ key }) => {
+    if (key === ' ' || key === 'Enter') {
+      this.toggleTermsCheck()
+    }
+  }
+
   render () {
     const { t } = this.context
     const { password, confirmPassword, passwordError, confirmPasswordError, termsChecked } = this.state
@@ -144,7 +143,7 @@ export default class NewAccount extends PureComponent {
       <div>
         <div className="first-time-flow__create-back">
           <a
-            onClick={e => {
+            onClick={(e) => {
               e.preventDefault()
               this.context.metricsEvent({
                 eventOpts: {
@@ -173,7 +172,7 @@ export default class NewAccount extends PureComponent {
             type="password"
             className="first-time-flow__input"
             value={password}
-            onChange={event => this.handlePasswordChange(event.target.value)}
+            onChange={(event) => this.handlePasswordChange(event.target.value)}
             error={passwordError}
             autoFocus
             autoComplete="new-password"
@@ -187,7 +186,7 @@ export default class NewAccount extends PureComponent {
             type="password"
             className="first-time-flow__input"
             value={confirmPassword}
-            onChange={event => this.handleConfirmPasswordChange(event.target.value)}
+            onChange={(event) => this.handleConfirmPasswordChange(event.target.value)}
             error={confirmPasswordError}
             autoComplete="confirm-password"
             margin="normal"
@@ -195,23 +194,34 @@ export default class NewAccount extends PureComponent {
             largeLabel
           />
           <div className="first-time-flow__checkbox-container" onClick={this.toggleTermsCheck}>
-            <div className="first-time-flow__checkbox">
+            <div
+              className="first-time-flow__checkbox"
+              tabIndex="0"
+              role="checkbox"
+              onKeyPress={this.onTermsKeyPress}
+              aria-checked={termsChecked}
+              aria-labelledby="ftf-chk1-label"
+            >
               {termsChecked ? <i className="fa fa-check fa-2x" /> : null}
             </div>
-            <span className="first-time-flow__checkbox-label">
-              I have read and agree to the <a
-                href="https://metamask.io/terms.html"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="first-time-flow__link-text">
-                  { 'Terms of Use' }
-                </span>
-              </a>
+            <span id="ftf-chk1-label" className="first-time-flow__checkbox-label">
+              {t('acceptTermsOfUse', [(
+                <a
+                  onClick={(e) => e.stopPropagation()}
+                  key="first-time-flow__link-text"
+                  href="https://metamask.io/terms.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="first-time-flow__link-text">
+                    { t('terms') }
+                  </span>
+                </a>
+              )])}
             </span>
           </div>
           <Button
-            type="confirm"
+            type="primary"
             className="first-time-flow__button"
             disabled={!this.isValid() || !termsChecked}
             onClick={this.handleCreate}
@@ -219,6 +229,7 @@ export default class NewAccount extends PureComponent {
             { t('create') }
           </Button>
         </form>
+        <PasswordWarning />
       </div>
     )
   }

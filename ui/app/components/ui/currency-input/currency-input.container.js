@@ -1,18 +1,24 @@
 import { connect } from 'react-redux'
 import CurrencyInput from './currency-input.component'
 import { ETH } from '../../../helpers/constants/common'
-import {getIsMainnet, preferencesSelector} from '../../../selectors/selectors'
+import {
+  getSendMaxModeState,
+  getIsMainnet,
+  getPreferences,
+} from '../../../selectors'
 
-const mapStateToProps = state => {
+const mapStateToProps = (state) => {
   const { metamask: { nativeCurrency, currentCurrency, conversionRate } } = state
-  const { showFiatInTestnets } = preferencesSelector(state)
+  const { showFiatInTestnets } = getPreferences(state)
   const isMainnet = getIsMainnet(state)
+  const maxModeOn = getSendMaxModeState(state)
 
   return {
     nativeCurrency,
     currentCurrency,
     conversionRate,
     hideFiat: (!isMainnet && !showFiatInTestnets),
+    maxModeOn,
   }
 }
 

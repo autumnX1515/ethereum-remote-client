@@ -18,9 +18,9 @@ export default class CurrencyInput extends PureComponent {
   static propTypes = {
     conversionRate: PropTypes.number,
     currentCurrency: PropTypes.string,
+    maxModeOn: PropTypes.bool,
     nativeCurrency: PropTypes.string,
     onChange: PropTypes.func,
-    onBlur: PropTypes.func,
     useFiat: PropTypes.bool,
     hideFiat: PropTypes.bool,
     value: PropTypes.string,
@@ -78,12 +78,12 @@ export default class CurrencyInput extends PureComponent {
 
   swap = () => {
     const { isSwapped, decimalValue } = this.state
-    this.setState({isSwapped: !isSwapped}, () => {
+    this.setState({ isSwapped: !isSwapped }, () => {
       this.handleChange(decimalValue)
     })
   }
 
-  handleChange = decimalValue => {
+  handleChange = (decimalValue) => {
     const { currentCurrency: fromCurrency, conversionRate, onChange } = this.props
 
     const hexValue = this.shouldUseFiat()
@@ -96,10 +96,6 @@ export default class CurrencyInput extends PureComponent {
 
     this.setState({ hexValue, decimalValue })
     onChange(hexValue)
-  }
-
-  handleBlur = () => {
-    this.props.onBlur(this.state.hexValue)
   }
 
   renderConversionComponent () {
@@ -136,25 +132,25 @@ export default class CurrencyInput extends PureComponent {
   }
 
   render () {
-    const { fiatSuffix, nativeSuffix, ...restProps } = this.props
+    const { fiatSuffix, nativeSuffix, maxModeOn, ...restProps } = this.props
     const { decimalValue } = this.state
 
     return (
-        <UnitInput
-          {...restProps}
-          suffix={this.shouldUseFiat() ? fiatSuffix : nativeSuffix}
-          onChange={this.handleChange}
-          onBlur={this.handleBlur}
-          value={decimalValue}
-          actionComponent={(
-            <div
-              className="currency-input__swap-component"
-              onClick={this.swap}
-            />
-          )}
-        >
-          { this.renderConversionComponent() }
-        </UnitInput>
+      <UnitInput
+        {...restProps}
+        suffix={this.shouldUseFiat() ? fiatSuffix : nativeSuffix}
+        onChange={this.handleChange}
+        value={decimalValue}
+        maxModeOn={maxModeOn}
+        actionComponent={(
+          <div
+            className="currency-input__swap-component"
+            onClick={this.swap}
+          />
+        )}
+      >
+        { this.renderConversionComponent() }
+      </UnitInput>
     )
   }
 }

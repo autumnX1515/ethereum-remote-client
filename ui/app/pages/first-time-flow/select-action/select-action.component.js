@@ -1,8 +1,9 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import Button from '../../../components/ui/button'
+import MetaFoxLogo from '../../../components/ui/metafox-logo'
 import {
-  INITIALIZE_METAMETRICS_OPT_IN_ROUTE,
+  INITIALIZE_CREATE_PASSWORD_ROUTE,
 } from '../../../helpers/constants/routes'
 
 export default class SelectAction extends PureComponent {
@@ -27,32 +28,20 @@ export default class SelectAction extends PureComponent {
 
   handleCreate = () => {
     this.props.setFirstTimeFlowType('create')
-    this.props.history.push(INITIALIZE_METAMETRICS_OPT_IN_ROUTE)
+    this.props.history.push(INITIALIZE_CREATE_PASSWORD_ROUTE)
   }
 
   handleImport = () => {
     this.props.setFirstTimeFlowType('import')
-    this.props.history.push(INITIALIZE_METAMETRICS_OPT_IN_ROUTE)
+    this.props.history.push(INITIALIZE_CREATE_PASSWORD_ROUTE)
   }
 
   render () {
     const { t } = this.context
 
     return (
-       <div className="select-action">
-        <div className="app-header__logo-container">
-          <img
-            className="app-header__metafox-logo app-header__metafox-logo--horizontal"
-            src="/images/logo/metamask-logo-horizontal.svg"
-            height={30}
-          />
-          <img
-            className="app-header__metafox-logo app-header__metafox-logo--icon"
-            src="/images/logo/metamask-fox.svg"
-            height={42}
-            width={42}
-          />
-        </div>
+      <div className="select-action">
+        <MetaFoxLogo />
 
         <div className="select-action__wrapper">
 
@@ -95,7 +84,7 @@ export default class SelectAction extends PureComponent {
                   </div>
                 </div>
                 <Button
-                  type="confirm"
+                  type="primary"
                   className="first-time-flow__button"
                   onClick={this.handleCreate}
                 >
@@ -106,7 +95,7 @@ export default class SelectAction extends PureComponent {
           </div>
 
         </div>
-       </div>
+      </div>
     )
   }
 }

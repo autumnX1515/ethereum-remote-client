@@ -1,31 +1,33 @@
-import React, { Component } from 'react'
-const PropTypes = require('prop-types')
-const { Provider } = require('react-redux')
-const { HashRouter } = require('react-router-dom')
-const Routes = require('./routes')
-const I18nProvider = require('../helpers/higher-order-components/i18n-provider')
-const MetaMetricsProvider = require('../helpers/higher-order-components/metametrics/metametrics.provider')
+import React from 'react'
+import PropTypes from 'prop-types'
+import { Provider } from 'react-redux'
+import { HashRouter } from 'react-router-dom'
+import Routes from './routes'
+import { I18nProvider, LegacyI18nProvider } from '../contexts/i18n'
+import { MetaMetricsProvider, LegacyMetaMetricsProvider } from '../contexts/metametrics'
 
-class Index extends Component {
-  render () {
-    const { store } = this.props
+const Index = (props) => {
+  const { store } = props
 
-    return (
-      <Provider store={store}>
-        <HashRouter hashType="noslash">
-          <MetaMetricsProvider>
+  return (
+    <Provider store={store}>
+      <HashRouter hashType="noslash">
+        <MetaMetricsProvider>
+          <LegacyMetaMetricsProvider>
             <I18nProvider>
-              <Routes />
+              <LegacyI18nProvider>
+                <Routes />
+              </LegacyI18nProvider>
             </I18nProvider>
-          </MetaMetricsProvider>
-        </HashRouter>
-      </Provider>
-    )
-  }
+          </LegacyMetaMetricsProvider>
+        </MetaMetricsProvider>
+      </HashRouter>
+    </Provider>
+  )
 }
 
 Index.propTypes = {
   store: PropTypes.object,
 }
 
-module.exports = Index
+export default Index
